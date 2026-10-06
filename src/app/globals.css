@@ -5,12 +5,16 @@
 /* =====================================================================
    OS PAPÉIS DE COR
    O código do Finanças pede papéis (--bg-card, --text-primary, --pos…),
-   nunca um hex. Cada app define os mesmos papéis do seu jeito.
-   As texturas (--papel-*) chegam do layout, com o endereço completo.
+   nunca um hex. Cada app define os mesmos papéis do seu jeito, no modo
+   claro e no escuro (data-tema no <html>, posto antes de pintar).
+   As texturas (--papel-*-claro/-escuro) chegam do layout, com o endereço
+   completo; aqui cada modo escolhe as suas.
 ===================================================================== */
 
 /* ─── INARI · a floresta da kitsune ─── */
 [data-app="inari"] {
+  --papel-pagina: var(--papel-pagina-claro);
+  --papel-cartao: var(--papel-cartao-claro);
   --bg-page: #F2EBDC;
   --bg-card: var(--papel-cartao) #F8F4EA;
   --bg-card-elevated: var(--papel-cartao) #FCFAF4;
@@ -26,6 +30,7 @@
   --orange-500: #1E3A2F;          /* acento: a mata */
   --orange-glow: rgba(30, 58, 47, .10);
   --sobre-acento: #F2EBDC;
+  --sobre-cor: #FFFFFF;           /* texto sobre botão de cor (positivo, negativo…) */
   --pos: #3F6B36;                 /* musgo fundo */
   --neg: #962B24;                 /* urushi */
   --alerta: #A87414;              /* ouro velho */
@@ -37,6 +42,7 @@
   --torii: #CF432F;
   --kitsunebi: #6DB5AE;
   --modal-backdrop: rgba(19, 33, 31, .55);
+  --sombra-cartinha: 0 1px 0 rgba(19, 33, 31, .05), 0 6px 18px -12px rgba(19, 33, 31, .35);
   --esquema: light;
   --f-titulo: var(--font-fraunces-nf), Georgia, serif;
   --f-ui: var(--font-barlow), system-ui, sans-serif;
@@ -46,47 +52,123 @@
   --raio: 14px;
 }
 
-/* ─── LIVRO-CAIXA · as cartinhas do Clube Entrelinhas ─── */
-[data-app="livro-caixa"] {
-  --bg-page: #EFE2D4;
-  --bg-card: var(--papel-cartao) #FAF5EE;
-  --bg-card-elevated: var(--papel-cartao) #FBF7F1;
-  --bg-hover: #F1E3E6;            /* pérola */
-  --bg-input: #FFFDF9;
-  --border-subtle: rgba(98, 73, 86, .10);
-  --border-default: rgba(98, 73, 86, .20);
-  --border-strong: rgba(98, 73, 86, .32);
-  --border-orange: rgba(110, 31, 46, .35);
-  --text-primary: #30323C;        /* noite */
-  --text-secondary: #4A4150;
-  --text-tertiary: #6E5F6B;
-  --orange-500: #624956;          /* acento: ameixa */
-  --orange-glow: rgba(199, 153, 170, .22);
-  --sobre-acento: #FAF5EE;
-  --pos: #3D6B5F;                 /* jade fundo */
-  --neg: #A3344A;                 /* rosa-vinho */
-  --alerta: #9C7424;              /* ouro velho */
-  --aviso: #B0603C;               /* terracota */
-  --info: #4F6A8A;
-  --roxo: #7D5C8C;
-  --neutro: #8A7F86;
-  --ouro: #D9B36A;
-  --rosa: #C799AA;
-  --jade: #5F857C;
-  --vinho: #6E1F2E;
-  --modal-backdrop: rgba(48, 50, 60, .6);
-  --esquema: light;
-  --f-titulo: var(--font-dmserif), Georgia, serif;
-  --f-ui: var(--font-cormorant), Georgia, serif;
-  --f-num: var(--font-elite), ui-monospace, monospace;
-  --f-rotulo: var(--font-cinzel), Georgia, serif;
-  --f-mao: var(--font-caveat), cursive;
-  --font-dm: var(--f-ui);
-  --font-fraunces: var(--f-titulo);
-  --raio: 6px;
+/* Inari à noite: a mata escura, e o acento vira a lanterna de ouro */
+[data-app="inari"][data-tema="escuro"] {
+  --papel-pagina: var(--papel-pagina-escuro);
+  --papel-cartao: var(--papel-cartao-escuro);
+  --bg-page: #0E1715;
+  --bg-card: var(--papel-cartao) #16211E;
+  --bg-card-elevated: var(--papel-cartao) #1B2824;
+  --bg-hover: #22302B;
+  --bg-input: #101A17;
+  --border-subtle: rgba(238, 234, 224, .07);
+  --border-default: rgba(238, 234, 224, .13);
+  --border-strong: rgba(238, 234, 224, .22);
+  --border-orange: rgba(215, 164, 65, .42);
+  --text-primary: #EEEAE0;
+  --text-secondary: #CBC5B6;
+  --text-tertiary: #949E96;
+  --orange-500: #D7A441;          /* acento: a lanterna */
+  --orange-glow: rgba(215, 164, 65, .14);
+  --sobre-acento: #13211F;
+  --sobre-cor: #0E1715;
+  --pos: #8CC28A;
+  --neg: #EE7B6B;
+  --alerta: #E3B44F;
+  --aviso: #EC9A5C;
+  --info: #86ACE0;
+  --roxo: #B1A3DE;
+  --neutro: #8F9A93;
+  --modal-backdrop: rgba(4, 9, 8, .72);
+  --sombra-cartinha: 0 1px 0 rgba(0, 0, 0, .3), 0 10px 24px -16px rgba(0, 0, 0, .9);
+  --esquema: dark;
 }
 
-html { -webkit-text-size-adjust: 100%; }
+/* ─── SNOWBOBÃO · as contas da Iara Loren ───
+   A identidade do site dela: «dark academia» quente, vela, vinho, cobre e
+   papel antigo; Cormorant Garamond nos títulos e Jost no resto. */
+[data-app="snowbobao"] {
+  --papel-pagina: var(--papel-pagina-claro);
+  --papel-cartao: var(--papel-cartao-claro);
+  --bg-page: #F2E9DD;
+  --bg-card: var(--papel-cartao) #FFFCF7;
+  --bg-card-elevated: var(--papel-cartao) #FFFDF9;
+  --cor-cartao: #FFFCF7;
+  --bg-hover: #F4EADC;
+  --bg-input: #FFFDF9;
+  --border-subtle: rgba(58, 36, 27, .08);
+  --border-default: rgba(58, 36, 27, .16);
+  --border-strong: rgba(58, 36, 27, .26);
+  --border-orange: rgba(147, 87, 31, .4);
+  --text-primary: #241713;
+  --text-secondary: #5E4A40;
+  --text-tertiary: #7E6759;
+  --orange-500: #93571F;          /* acento: o cobre do site */
+  --orange-glow: rgba(147, 87, 31, .10);
+  --sobre-acento: #FFF9F1;
+  --sobre-cor: #FFFFFF;
+  --pos: #4F7A45;                 /* oliva */
+  --neg: #A8323E;                 /* a caneta vinho da revisora */
+  --alerta: #A87414;
+  --aviso: #B45C24;               /* brasa */
+  --info: #3F5F7A;                /* tinta azul */
+  --roxo: #6A4C7A;
+  --neutro: #8C7C70;
+  --ouro: #93571F;
+  --vela: #E0A867;                /* o ouro da vela, igual nos dois modos */
+  --vinho: #6E212B;
+  --linha-ouro: rgba(147, 87, 31, .30);
+  --modal-backdrop: rgba(36, 23, 19, .55);
+  --sombra-cartinha: 0 1px 0 rgba(58, 36, 27, .05), 0 10px 26px -18px rgba(58, 36, 27, .45);
+  --sombra-figura: drop-shadow(0 0 .7px rgba(94, 74, 64, .7)) drop-shadow(0 3px 4px rgba(36, 23, 19, .14));
+  --esquema: light;
+  --f-titulo: var(--font-cormorant), Georgia, serif;
+  --f-ui: var(--font-jost), system-ui, sans-serif;
+  --f-num: var(--font-jost), system-ui, sans-serif;
+  --font-dm: var(--f-ui);
+  --font-fraunces: var(--f-titulo);
+  --raio: 4px;
+}
+
+/* Snowbobão à luz de vela */
+[data-app="snowbobao"][data-tema="escuro"] {
+  --papel-pagina: var(--papel-pagina-escuro);
+  --papel-cartao: var(--papel-cartao-escuro);
+  --bg-page: #0E0C0B;
+  --bg-card: var(--papel-cartao) #191312;
+  --bg-card-elevated: var(--papel-cartao) #211A17;
+  --cor-cartao: #1B1513;
+  --bg-hover: #261E1A;
+  --bg-input: #141010;
+  --border-subtle: rgba(224, 168, 103, .08);
+  --border-default: rgba(224, 168, 103, .15);
+  --border-strong: rgba(224, 168, 103, .26);
+  --border-orange: rgba(224, 168, 103, .42);
+  --text-primary: #F2E9DF;
+  --text-secondary: #C3B2A3;
+  --text-tertiary: #9A897B;
+  --orange-500: #E0A867;          /* acento: a chama */
+  --orange-glow: rgba(224, 168, 103, .12);
+  --sobre-acento: #14100E;
+  --sobre-cor: #14100E;
+  --pos: #9CC48A;
+  --neg: #E58A86;
+  --alerta: #E8B45C;
+  --aviso: #E39060;
+  --info: #93B3D3;
+  --roxo: #BBA3CF;
+  --neutro: #9A897B;
+  --ouro: #E0A867;
+  --vinho: #8A2F3B;
+  --linha-ouro: rgba(224, 168, 103, .30);
+  --modal-backdrop: rgba(8, 6, 5, .74);
+  --sombra-cartinha: 0 1px 0 rgba(0, 0, 0, .35), 0 14px 30px -18px rgba(0, 0, 0, .95);
+  --sombra-figura: drop-shadow(0 4px 10px rgba(0, 0, 0, .55));
+  --esquema: dark;
+}
+
+html { -webkit-text-size-adjust: 100%; color-scheme: var(--esquema); --mistura-cor: 80%; }
+html[data-tema="escuro"] { --mistura-cor: 55%; }
 
 body {
   margin: 0;
@@ -97,27 +179,22 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* a Cormorant tem o olho da letra pequeno: igualar ao tamanho das outras */
-[data-app="livro-caixa"] .font-dm,
-[data-app="livro-caixa"] body { font-size-adjust: 0.5; font-weight: 600; }
-[data-app="livro-caixa"] .font-dm.font-semibold,
-[data-app="livro-caixa"] .font-dm.font-bold { font-weight: 700; }
-[data-app="livro-caixa"] .font-dm.uppercase {
-  font-family: var(--f-rotulo);
-  font-size-adjust: none;
-  letter-spacing: .08em;
-}
-/* o ajuste é herdado: número e título voltam ao tamanho natural */
-[data-app="livro-caixa"] .font-mono,
-[data-app="livro-caixa"] .font-fraunces { font-size-adjust: none; }
-[data-app="livro-caixa"] .font-mono { letter-spacing: -.01em; font-weight: 400; }
+.font-mono { font-variant-numeric: tabular-nums lining-nums; }
 
-.font-mono { font-variant-numeric: tabular-nums; }
+/* Snowbobão: a Cormorant tem o olho da letra pequeno; nos títulos de dentro
+   ela sobe ao tamanho das outras (o nome grande da faixa fica de fora) */
+[data-app="snowbobao"] .font-fraunces { font-weight: 600; font-size-adjust: .47; }
+[data-app="snowbobao"] .font-dm.uppercase { letter-spacing: .14em; font-weight: 500; }
+[data-app="snowbobao"] .font-mono { font-weight: 500; letter-spacing: 0; }
 
 input, select, textarea, button { font-family: inherit; }
 input, select, textarea { color: var(--text-primary); }
 ::placeholder { color: var(--text-tertiary); opacity: .8; }
 :focus-visible { outline: 2px solid var(--orange-500); outline-offset: 2px; }
+
+/* no escuro, o texto branco fixo sobre um botão de cor do tema (positivo,
+   negativo, acento…) vira escuro; sobre a cor que a pessoa escolheu, fica */
+.text-white[style*="var(--"] { color: var(--sobre-cor); }
 
 .fundo-modal { background: var(--modal-backdrop); backdrop-filter: blur(3px); }
 
@@ -137,17 +214,29 @@ input, select, textarea { color: var(--text-primary); }
   cursor: pointer;
 }
 .btn-soft:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-strong); }
+[data-app="snowbobao"] .btn-soft { border-radius: 3px; font-weight: 500; }
 
-/* ─── a faixa do alto ─── */
+/* ─── a faixa do alto (noite nos dois modos) ─── */
 .faixa {
   position: relative;
   color: #EEEAE0;
   background: var(--papel-noite) #13211F;
 }
-[data-app="livro-caixa"] .faixa { background: var(--papel-noite) #30323C; color: #F1E3E6; }
+[data-app="inari"][data-tema="escuro"] .faixa { background: var(--papel-noite) #101B19; }
+[data-app="snowbobao"] .faixa {
+  color: #F2E9DF;
+  background:
+    radial-gradient(55% 95% at 88% 100%, rgba(224, 168, 103, .20), transparent 72%),
+    radial-gradient(35% 70% at 62% 100%, rgba(210, 118, 58, .12), transparent 72%),
+    var(--papel-noite) #15100E;
+}
 
-/* céu: pontinhos de estrela, tom sobre tom */
-.ceu {
+/* céu: pontinhos de estrela, tom sobre tom (por cima do papel da faixa) */
+.ceu::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
   background-image:
     radial-gradient(1.4px 1.4px at 12% 22%, rgb(238 234 224 / .6) 50%, transparent 52%),
     radial-gradient(1px 1px at 27% 64%, rgb(238 234 224 / .45) 50%, transparent 52%),
@@ -156,6 +245,17 @@ input, select, textarea { color: var(--text-primary); }
     radial-gradient(1.3px 1.3px at 71% 30%, rgb(238 234 224 / .5) 50%, transparent 52%),
     radial-gradient(1px 1px at 84% 58%, rgb(238 234 224 / .45) 50%, transparent 52%),
     radial-gradient(1.5px 1.5px at 93% 18%, rgb(238 234 224 / .55) 50%, transparent 52%);
+}
+/* Snowbobão: em vez de estrela, poeira de ouro no ar da vela */
+[data-app="snowbobao"] .ceu::before {
+  background-image:
+    radial-gradient(1.2px 1.2px at 9% 30%, rgb(224 168 103 / .45) 50%, transparent 52%),
+    radial-gradient(1px 1px at 24% 70%, rgb(224 168 103 / .3) 50%, transparent 52%),
+    radial-gradient(1.4px 1.4px at 41% 14%, rgb(237 195 143 / .5) 50%, transparent 52%),
+    radial-gradient(1px 1px at 53% 48%, rgb(224 168 103 / .35) 50%, transparent 52%),
+    radial-gradient(1.2px 1.2px at 66% 24%, rgb(237 195 143 / .45) 50%, transparent 52%),
+    radial-gradient(1px 1px at 79% 12%, rgb(224 168 103 / .4) 50%, transparent 52%),
+    radial-gradient(1.3px 1.3px at 95% 40%, rgb(237 195 143 / .45) 50%, transparent 52%);
 }
 
 /* fogo-de-raposa (kitsunebi): chamas que respiram */
@@ -180,10 +280,96 @@ input, select, textarea { color: var(--text-primary); }
           mask: radial-gradient(28px 22px at 50% 100%, #000 98%, transparent 100%) 0 0 / 56px 22px repeat-x;
 }
 
-/* borda de correio aéreo (Livro-caixa) */
-.correio {
-  height: 9px;
-  background: repeating-linear-gradient(-45deg, var(--rosa) 0 12px, var(--bg-page) 12px 18px, var(--jade) 18px 30px, var(--bg-page) 30px 36px);
+/* ─── Snowbobão: as velas, o losango e o fio de ouro ─── */
+/* (o display vem do md:flex do JSX: some no celular, onde o mês ocupa a base) */
+.velas {
+  position: absolute;
+  bottom: 13px;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 0 7px;
+  pointer-events: none;
+}
+/* o pires de latão onde as velas estão */
+.velas::after {
+  content: "";
+  position: absolute;
+  left: -4px; right: -4px; bottom: -5px; height: 7px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #F0C98F, #B98545 55%, #7A5226);
+  box-shadow: 0 2px 4px rgb(0 0 0 / .5);
+}
+.vela {
+  position: relative;
+  width: 12px;
+  border-radius: 2px 2px 1px 1px;
+  background: linear-gradient(90deg, #BFAF9B, #F7EFE3 38%, #EADFCF 70%, #A99880);
+}
+/* cera escorrida */
+.vela::after {
+  content: "";
+  position: absolute;
+  top: -1px; left: 2px;
+  width: 4px; height: 9px;
+  border-radius: 0 0 3px 3px;
+  background: #F7EFE3;
+}
+.pavio {
+  position: absolute;
+  left: 50%; top: -6px;
+  width: 1.5px; height: 7px;
+  background: #2A1E18;
+  transform: translateX(-50%);
+}
+.chama {
+  position: absolute;
+  left: 50%; bottom: 100%;
+  width: 9px; height: 17px;
+  margin: 0 0 4px -4.5px;
+  border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+  background: radial-gradient(circle at 50% 74%, #FFF8E6 0 20%, #FFD27A 44%, #E0A867 64%, rgb(224 168 103 / 0) 76%);
+  filter: drop-shadow(0 0 7px rgb(255 190 110 / .95));
+  transform-origin: 50% 90%;
+  animation: tremula 2.6s ease-in-out infinite;
+}
+.halo {
+  position: absolute;
+  left: 50%; bottom: 100%;
+  width: 84px; height: 84px;
+  margin: 0 0 -26px -42px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 200 120 / .26), transparent 66%);
+  animation: pulsa 3.4s ease-in-out infinite;
+}
+@keyframes tremula {
+  0%, 100% { transform: scale(1) rotate(-1deg); }
+  30% { transform: scale(1.07, .95) rotate(2.5deg); }
+  62% { transform: scale(.95, 1.06) rotate(-2deg); }
+}
+@keyframes pulsa { 50% { opacity: .6; } }
+
+/* o losango do site da Iara, piscando devagar como estrela */
+.cintila { position: absolute; color: var(--vela); pointer-events: none; animation: cintila 4.8s ease-in-out infinite; }
+@keyframes cintila { 0%, 100% { opacity: .35; transform: scale(.85); } 50% { opacity: .95; transform: scale(1); } }
+
+/* a linha de ouro dupla com o losango no meio, na base da faixa */
+.fio { position: relative; height: 15px; }
+.fio::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 4px; height: 4px;
+  border-top: 1px solid rgb(224 168 103 / .6);
+  border-bottom: 1px solid rgb(224 168 103 / .28);
+}
+.fio .orn {
+  position: absolute;
+  left: 50%; top: 6px;
+  width: 26px; height: 26px;
+  margin: -13px 0 0 -13px;
+  padding: 3px;
+  border-radius: 50%;
+  color: var(--vela);
+  background: #15100E;
 }
 
 /* ─── abas ─── */
@@ -209,22 +395,18 @@ input, select, textarea { color: var(--text-primary); }
   box-shadow: inset 0 3px 0 var(--torii);
 }
 
-/* Livro-caixa: as abas são selos; a ativa leva o carimbo rosa, torta */
-[data-app="livro-caixa"] .aba {
-  border-radius: 3px;
-  font-family: var(--f-rotulo);
-  font-size: 11px;
-  letter-spacing: .06em;
+/* Snowbobão: rótulo espaçado do site; a ativa é vinho, sublinhada de ouro */
+[data-app="snowbobao"] .aba {
+  border-radius: 2px;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: .16em;
   text-transform: uppercase;
-  font-weight: 700;
 }
-[data-app="livro-caixa"] .aba[aria-selected="true"] {
-  color: #30323C;
-  background: var(--papel-rosa) var(--rosa);
-  transform: rotate(-1.5deg);
-  outline: 1.5px dashed rgba(48, 50, 60, .45);
-  outline-offset: -5px;
-  box-shadow: 0 2px 0 rgba(98, 73, 86, .18);
+[data-app="snowbobao"] .aba[aria-selected="true"] {
+  color: #FFF3E6;
+  background: var(--vinho);
+  box-shadow: inset 0 -2px 0 var(--vela);
 }
 
 /* a figura que espia por trás da barra de abas */
@@ -241,16 +423,18 @@ input, select, textarea { color: var(--text-primary); }
 @keyframes espia { from { transform: translateY(28px); opacity: 0; } to { transform: none; opacity: 1; } }
 .barra-abas { position: relative; z-index: 1; }
 
-/* cartinha (Livro-caixa): moldura dupla nos cartões do resumo */
-[data-app="livro-caixa"] .cartinha {
-  box-shadow: inset 0 0 0 4px #FAF5EE, inset 0 0 0 5px rgba(98, 73, 86, .28), 0 1px 0 rgba(98, 73, 86, .08);
-}
-[data-app="inari"] .cartinha {
-  box-shadow: 0 1px 0 rgba(19, 33, 31, .05), 0 6px 18px -12px rgba(19, 33, 31, .35);
+/* o gato branco precisa de um fio de contorno no papel claro; no escuro, sombra */
+[data-app="snowbobao"] .figura { filter: var(--sombra-figura); }
+
+/* os cartões do resumo */
+.cartinha { box-shadow: var(--sombra-cartinha); }
+/* Snowbobão: moldura fina de ouro por dentro, como ex-libris */
+[data-app="snowbobao"] .cartinha {
+  box-shadow: inset 0 0 0 4px var(--cor-cartao), inset 0 0 0 5px var(--linha-ouro), var(--sombra-cartinha);
 }
 
 .figura-fluida { max-width: 100%; height: auto; }
 
 @media (prefers-reduced-motion: reduce) {
-  .kitsunebi, .espiando { animation: none; }
+  .kitsunebi, .espiando, .chama, .halo, .cintila { animation: none; }
 }

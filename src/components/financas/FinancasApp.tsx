@@ -27,7 +27,7 @@ import {
   type Emprestimo, type PagamentoEmprestimo, type Orcamento, type Caixinha, type MetasFinanceiras,
   type Cartao, type MovimentoCaixinha, type PagamentoParcialPendencia,
 } from "@/lib/financas-data";
-import { APP, TEMA, humorDoMes } from "@/lib/tema";
+import { APP, TEMA, humorDoMes, tinta } from "@/lib/tema";
 
 type TabId = "lancamentos" | "calendario" | "fixos" | "pendencias" | "metas" | "cartoes" | "categorias" | "graficos" | "projecao";
 
@@ -1068,7 +1068,7 @@ function LancamentosTab({
               const entrada = isEntrada(t.type);
               const catO = cats.find((c) => c.n === t.cat);
               const catBg = catO ? catO.c + "22" : "color-mix(in srgb, var(--neutro) 15%, transparent)";
-              const catFg = catO ? catO.c : "var(--neutro)";
+              const catFg = catO ? tinta(catO.c) : "var(--neutro)";
               return (
                 <tr key={t.id}
                   style={{
@@ -1342,7 +1342,7 @@ function FixosTab({
                   const entrada = f.type === "entrada_fixa";
                   const catO = cats.find((c) => c.n === f.cat);
                   const catBg = catO ? catO.c + "22" : "color-mix(in srgb, var(--neutro) 15%, transparent)";
-                  const catFg = catO ? catO.c : "var(--neutro)";
+                  const catFg = catO ? tinta(catO.c) : "var(--neutro)";
                   return (
                     <tr key={f.id} style={{
                       borderBottom: "1px solid var(--border-subtle)",

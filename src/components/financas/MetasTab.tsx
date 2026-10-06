@@ -12,7 +12,7 @@ import {
   fmtBRL, hojeISO, nextId, saldoCaixinha, totalReservado, progressoCaixinha,
   depositosNoMesCaixinha, saldoVirtualCaixinha,
 } from "@/lib/financas-data";
-import { TEMA } from "@/lib/tema";
+import { TEMA, tinta } from "@/lib/tema";
 
 const CORES_CAIXINHA = TEMA.coresCaixinha;
 
@@ -580,7 +580,7 @@ function CaixinhaCard({
         <div className="flex justify-between items-start mb-2">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-lg flex items-center justify-center"
-              style={{ background: c.cor + "22", color: c.cor }}>
+              style={{ background: c.cor + "22", color: tinta(c.cor) }}>
               <PiggyBank size={16} />
             </div>
             <div>
@@ -604,13 +604,13 @@ function CaixinhaCard({
         </div>
 
         <div className="mb-2">
-          <p className="font-mono text-xl font-semibold" style={{ color: c.cor }}>
+          <p className="font-mono text-xl font-semibold" style={{ color: tinta(c.cor) }}>
             R$ {fmtBRL(saldo)}
           </p>
           {virtual.a_receber > 0 && (
             <p className="font-mono text-[11px]" style={{ color: "var(--text-tertiary)" }}>
               + R$ {fmtBRL(virtual.a_receber)} a receber
-              <span className="ml-1 font-dm text-[10px]" style={{ color: c.cor }}>
+              <span className="ml-1 font-dm text-[10px]" style={{ color: tinta(c.cor) }}>
                 (virtual: R$ {fmtBRL(virtual.total)})
               </span>
             </p>
@@ -656,7 +656,7 @@ function CaixinhaCard({
 
         {c.cat_vinculada && (
           <div className="mb-3 font-dm text-[10px]" style={{ color: "var(--text-tertiary)" }}>
-            🔗 Vinculada à categoria: <strong style={{ color: c.cor }}>{c.cat_vinculada}</strong>
+            🔗 Vinculada à categoria: <strong style={{ color: tinta(c.cor) }}>{c.cat_vinculada}</strong>
           </div>
         )}
 
@@ -711,7 +711,7 @@ function CaixinhaCard({
                 <span className="font-dm text-[11px] inline-flex items-center gap-1" style={{ color: "var(--text-secondary)" }}>
                   {f.tipo === "pendencia" ? "📥" : "🤝"} {f.desc}
                 </span>
-                <span className="font-mono text-[11px]" style={{ color: c.cor }}>
+                <span className="font-mono text-[11px]" style={{ color: tinta(c.cor) }}>
                   + R$ {fmtBRL(f.valor)}
                 </span>
               </div>
@@ -799,7 +799,7 @@ function CaixinhaModal({
         <div className="flex justify-between items-start mb-5">
           <h2 className="font-fraunces text-xl flex items-center gap-3" style={{ color: "var(--text-primary)" }}>
             <span className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: cor + "22", color: cor }}>
+              style={{ background: cor + "22", color: tinta(cor) }}>
               <PiggyBank size={15} />
             </span>
             {editing ? "Editar caixinha" : "Nova caixinha"}
@@ -902,7 +902,7 @@ function MovimentoModal({
           {dep ? "Depositar" : "Sacar"}
         </h2>
         <p className="font-dm text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
-          <strong style={{ color: caixinha.cor }}>{caixinha.nome}</strong> · saldo atual R$ {fmtBRL(saldoCaixinha(caixinha))}
+          <strong style={{ color: tinta(caixinha.cor) }}>{caixinha.nome}</strong> · saldo atual R$ {fmtBRL(saldoCaixinha(caixinha))}
         </p>
 
         <Field label="Valor (R$)">

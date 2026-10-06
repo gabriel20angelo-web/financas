@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "dev:inari": "cross-env NEXT_PUBLIC_APP=inari NEXT_DIST=.next-dev-inari next dev -p 3021",
-    "dev:livro-caixa": "cross-env NEXT_PUBLIC_APP=livro-caixa NEXT_DIST=.next-dev-livro-caixa next dev -p 3022",
+    "dev:snowbobao": "cross-env NEXT_PUBLIC_APP=snowbobao NEXT_DIST=.next-dev-snowbobao next dev -p 3022",
     "build:inari": "cross-env NEXT_PUBLIC_APP=inari NEXT_DIST=.next-inari next build",
-    "build:livro-caixa": "cross-env NEXT_PUBLIC_APP=livro-caixa NEXT_DIST=.next-livro-caixa next build",
+    "build:snowbobao": "cross-env NEXT_PUBLIC_APP=snowbobao NEXT_DIST=.next-snowbobao next build",
     "build": "node scripts/build-tudo.mjs",
     "typecheck": "tsc --noEmit",
     "publicar": "node scripts/publicar.mjs"

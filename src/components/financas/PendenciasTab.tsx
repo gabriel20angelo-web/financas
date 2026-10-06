@@ -14,6 +14,7 @@ import {
   type DividaGrupo,
 } from "@/lib/financas-data";
 import EmprestimosView from "./EmprestimosView";
+import { tinta } from "@/lib/tema";
 
 type Filtro = "todos" | "pagar" | "receber" | "dividas" | "emprestimos";
 
@@ -281,7 +282,7 @@ function ListaPendencias({
               const dias = diasAteVencer(p);
               const catO = cats.find((c) => c.n === p.cat);
               const catBg = catO ? catO.c + "22" : "color-mix(in srgb, var(--neutro) 15%, transparent)";
-              const catFg = catO ? catO.c : "var(--neutro)";
+              const catFg = catO ? tinta(catO.c) : "var(--neutro)";
 
               let statusLabel = "Aberto";
               let statusColor = "var(--text-tertiary)";

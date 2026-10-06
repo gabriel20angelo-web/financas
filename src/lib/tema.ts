@@ -5,14 +5,19 @@
  *
  * Inari: a raposa. Inari é o kami do arroz e da prosperidade; as raposas são
  * as mensageiras dele e, nos santuários, seguram a chave do celeiro.
- * Livro-caixa: os gatos do Clube Entrelinhas. Livro, porque é um clube de
- * literatura; caixa, porque é onde o gato senta.
+ * Snowbobão: as contas da Iara Loren, com a identidade do site dela (vela,
+ * vinho, cobre, papel antigo) e o gato branco de pelúcia de traços.
+ *
+ * Os dois têm modo claro e escuro (data-tema no <html>; ver ModoTema.tsx).
  */
 
-export type AppId = "inari" | "livro-caixa";
+export type AppId = "inari" | "snowbobao";
 
-export const APP: AppId = process.env.NEXT_PUBLIC_APP === "livro-caixa" ? "livro-caixa" : "inari";
+export const APP: AppId = process.env.NEXT_PUBLIC_APP === "snowbobao" ? "snowbobao" : "inari";
 export const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
+/** Onde fica guardado o modo escolhido (claro | escuro); sem escolha, vale o do aparelho. */
+export const CHAVE_MODO = `modo-${APP}`;
 
 /** Caminho de um arquivo de public/, já com o basePath. */
 export function asset(caminho: string) {
@@ -37,7 +42,13 @@ interface Tema {
   /** o nome em duas partes: a segunda vai em itálico no acento */
   titulo: [string, string];
   subtitulo: string;
+  /** a linha pequena acima do nome, na faixa */
+  marca: string;
   corDoNavegador: string;
+  /** recado embaixo do «Entrar» (o Inari usa a conta do painel da Raposa) */
+  notaDaConta?: string;
+  /** oferece trazer os dados do antigo Finanças do Meu Consultório */
+  trazAntigos: boolean;
   figurasDaAba: Record<AbaId, Figura>;
   humor: Record<Humor, Figura>;
   carregando: Figura;
@@ -64,7 +75,10 @@ const INARI: Tema = {
   nome: "Inari",
   titulo: ["Ina", "ri"],
   subtitulo: "as contas da raposa",
+  marca: "as contas da raposa",
   corDoNavegador: "#13211F",
+  notaDaConta: "É a mesma conta do painel do site da Raposa Analítica.",
+  trazAntigos: true,
   figurasDaAba: {
     lancamentos: f("inari/fig/raposa-anotando.webp", "Raposa de óculos anotando num caderno", 96),
     calendario: f("inari/fig/raposa-olhando-lua.webp", "Raposa de costas olhando a lua", 92),
@@ -110,57 +124,60 @@ const INARI: Tema = {
   },
 };
 
-const LIVRO_CAIXA: Tema = {
-  nome: "Livro-caixa",
-  titulo: ["Livro-", "caixa"],
-  subtitulo: "as contas do gato · Entrelinhas",
-  corDoNavegador: "#30323C",
+const SNOWBOBAO: Tema = {
+  nome: "Snowbobão",
+  titulo: ["Snow", "bobão"],
+  subtitulo: "as contas da Iara",
+  marca: "Iara Loren",
+  corDoNavegador: "#15100E",
+  trazAntigos: false,
   figurasDaAba: {
-    lancamentos: f("livro-caixa/gato/escrevendo.webp", "O gato escrevendo com pena e tinteiro", 100),
-    calendario: f("livro-caixa/gato/olhando-as-estrelas.webp", "O gato olhando a lua e as estrelas", 104),
-    fixos: f("livro-caixa/gato/brincando-com-novelo.webp", "O gato brincando com o novelo", 96),
-    pendencias: f("livro-caixa/gato/detetive-de-lupa.webp", "O gato de detetive, com a lupa no olho", 100),
-    metas: f("livro-caixa/gato/na-caixa.webp", "O gato dentro de uma caixa de papelão", 82),
-    cartoes: f("livro-caixa/gato/tirando-cartas.webp", "O gato tirando cartas", 100),
-    categorias: f("livro-caixa/gato/no-alto-da-pilha.webp", "O gato no alto de uma pilha de livros", 112),
-    graficos: f("livro-caixa/gato/de-oculos.webp", "O gato de óculos dourados ao lado dos livros", 98),
-    projecao: f("livro-caixa/gato/bola-de-cristal.webp", "O gato com a bola de cristal", 100),
+    lancamentos: f("snowbobao/gato/escrevendo.webp", "O Snowbobão escrevendo com pena e tinteiro", 98),
+    calendario: f("snowbobao/gato/olhando-as-estrelas.webp", "O Snowbobão olhando a lua e as estrelas", 104),
+    fixos: f("snowbobao/gato/xicara-de-cafe.webp", "O Snowbobão com a xícara de café de todo dia", 100),
+    pendencias: f("snowbobao/gato/detetive-de-lupa.webp", "O Snowbobão revisando com a lupa no olho", 102),
+    metas: f("snowbobao/gato/na-caixa.webp", "O Snowbobão dentro de uma caixa de papelão", 84),
+    cartoes: f("snowbobao/gato/de-oculos.webp", "O Snowbobão de óculos dourados ao lado dos livros", 92),
+    categorias: f("snowbobao/gato/no-alto-da-pilha.webp", "O Snowbobão no alto de uma pilha de livros", 114),
+    graficos: f("snowbobao/gato/lendo.webp", "O Snowbobão lendo um livro vinho", 100),
+    projecao: f("snowbobao/gato/com-a-lanterna.webp", "O Snowbobão com a lanterna acesa", 104),
   },
   humor: {
-    vazio: f("livro-caixa/gato/sonolento.webp", "O gato bocejando de sono"),
-    bem: f("livro-caixa/gato/feliz.webp", "O gato feliz"),
-    otimo: f("livro-caixa/gato/em-pe-comemorando.webp", "O gato em pé, comemorando"),
-    aperto: f("livro-caixa/gato/assustado.webp", "O gato assustado, de pelo arrepiado"),
+    vazio: f("snowbobao/gato/sonolento.webp", "O Snowbobão bocejando de sono"),
+    bem: f("snowbobao/gato/feliz.webp", "O Snowbobão feliz"),
+    otimo: f("snowbobao/gato/barriga-pra-cima.webp", "O Snowbobão de barriga pra cima, todo bobo de alegria"),
+    aperto: f("snowbobao/gato/assustado.webp", "O Snowbobão assustado, de pelo arrepiado"),
   },
-  carregando: f("livro-caixa/gato/de-lado-andando.webp", "O gato andando"),
-  entrar: f("livro-caixa/gato/espiando-atras-do-livro.webp", "O gato espiando atrás de um livro"),
-  vazio: f("livro-caixa/gato/bolinha-dormindo.webp", "O gato dormindo enrolado"),
-  rodape: f("livro-caixa/gato/espiando-de-baixo.webp", "O gato espiando por cima de uma linha"),
+  carregando: f("snowbobao/gato/de-lado-andando.webp", "O Snowbobão andando"),
+  entrar: f("snowbobao/gato/espiando-atras-do-livro.webp", "O Snowbobão espiando atrás de um livro"),
+  vazio: f("snowbobao/gato/bolinha-dormindo.webp", "O Snowbobão dormindo enrolado"),
+  rodape: f("snowbobao/gato/espiando-de-baixo.webp", "O Snowbobão espiando por cima de uma linha"),
   categoriasIniciais: [
-    { n: "Alimentação", c: "#C27A4E" },
-    { n: "Transporte", c: "#4F6A8A" },
-    { n: "Moradia", c: "#624956" },
-    { n: "Saúde", c: "#A33A4A" },
-    { n: "Lazer", c: "#D9B36A" },
-    { n: "Educação", c: "#7D5C8C" },
-    { n: "Salário", c: "#5F857C" },
-    { n: "Freelance", c: "#C799AA" },
-    { n: "Outros", c: "#8A7F86" },
+    { n: "Alimentação", c: "#C27840" },
+    { n: "Transporte", c: "#4F6E8C" },
+    { n: "Moradia", c: "#8A5A44" },
+    { n: "Saúde", c: "#B0454F" },
+    { n: "Lazer", c: "#C9963F" },
+    { n: "Livros e estudo", c: "#7A5A8C" },
+    { n: "Salário", c: "#5F7F4E" },
+    { n: "Aulas particulares", c: "#3E7A72" },
+    { n: "Revisão de textos", c: "#9C6A3A" },
+    { n: "Outros", c: "#8C7C70" },
   ],
-  coresCartao: ["#30323C", "#624956", "#6E1F2E", "#3D6B5F", "#4F6A8A", "#7D5C8C", "#8A5A3C", "#26304E", "#A33A4A", "#5F857C"],
-  coresCaixinha: ["#5F857C", "#C799AA", "#D9B36A", "#624956", "#6E1F2E", "#4F6A8A", "#7D5C8C", "#C27A4E", "#30323C", "#A9C2B6"],
-  corCategoriaNova: "#C799AA",
-  corAjuste: "#8A7F86",
+  coresCartao: ["#6E212B", "#2B1E19", "#3E5A4A", "#2F3B4F", "#7A4718", "#4A2F3D", "#1C1715", "#8A2F3B", "#5C4A3A", "#3B4A5E"],
+  coresCaixinha: ["#B0454F", "#C9853F", "#5F7F4E", "#4F6E8C", "#8C6A9E", "#B9783F", "#3E7A72", "#A8323E", "#8C7C70", "#C9963F"],
+  corCategoriaNova: "#B0454F",
+  corAjuste: "#8C7C70",
   textos: {
-    carregando: "O gato está abrindo o livro…",
-    vazioLancamentos: "Nenhuma linha escrita neste mês. O gato dormiu em cima do livro: use os botões acima para anotar um gasto ou uma entrada.",
+    carregando: "O Snowbobão está procurando os óculos…",
+    vazioLancamentos: "Nenhuma linha escrita neste mês. O Snowbobão dormiu em cima do caderno: use os botões acima para anotar um gasto ou uma entrada.",
     entrarTitulo: "Entrar",
-    entrarSub: "Com a conta entrada, o livro fica igual no celular e no computador.",
+    entrarSub: "Com a conta entrada, as contas ficam iguais no celular e no computador.",
     soNesteAparelho: "Só neste aparelho",
   },
 };
 
-export const TEMA: Tema = APP === "livro-caixa" ? LIVRO_CAIXA : INARI;
+export const TEMA: Tema = APP === "snowbobao" ? SNOWBOBAO : INARI;
 
 /** Qual figura conta o mês: sem lançamento, no vermelho, bem, ou sobrando. */
 export function humorDoMes(entradas: number, gastos: number, qtd: number): Humor {
@@ -169,4 +186,13 @@ export function humorDoMes(entradas: number, gastos: number, qtd: number): Humor
   if (saldo < 0) return "aperto";
   if (entradas > 0 && saldo >= entradas * 0.2) return "otimo";
   return "bem";
+}
+
+/**
+ * Cor escolhida pela pessoa (categoria, caixinha, cartão) usada como TEXTO:
+ * puxada para a cor do texto do tema (um pouco no claro, mais no escuro, ver
+ * --mistura-cor), para ler no papel claro e no escuro.
+ */
+export function tinta(cor: string) {
+  return `color-mix(in oklab, ${cor} var(--mistura-cor), var(--text-primary))`;
 }

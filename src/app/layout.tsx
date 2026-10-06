@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { CSSProperties } from "react";
 import "./globals.css";
 import { classesDeFonte } from "./fontes";
-import { APP, TEMA, asset } from "@/lib/tema";
+import { APP, CHAVE_MODO, TEMA, asset } from "@/lib/tema";
 
 export const metadata: Metadata = {
   title: `${TEMA.nome} · ${TEMA.subtitulo}`,
@@ -24,16 +24,32 @@ export const viewport: Viewport = {
 
 const papel = (nome: string) => `url("${asset(`${APP}/papel/${nome}.webp`)}")`;
 
-// As texturas vão como variáveis com o endereço completo, para o
-// url() valer igual em qualquer lugar onde o papel for usado.
+// As texturas vão como variáveis com o endereço completo, para o url() valer
+// igual em qualquer lugar. Cada modo escolhe as suas no globals.css.
 const papeis: Record<string, string> =
-  APP === "livro-caixa"
-    ? { "--papel-pagina": papel("creme"), "--papel-cartao": papel("perola"), "--papel-noite": papel("noite"), "--papel-rosa": papel("rosa"), "--papel-jade": papel("jade") }
-    : { "--papel-pagina": papel("washi"), "--papel-cartao": papel("cartao"), "--papel-noite": papel("noite") };
+  APP === "snowbobao"
+    ? {
+        "--papel-pagina-claro": papel("pergaminho"), "--papel-cartao-claro": papel("marfim"),
+        "--papel-pagina-escuro": papel("breu"), "--papel-cartao-escuro": papel("couro"),
+        "--papel-noite": papel("vela"),
+      }
+    : {
+        "--papel-pagina-claro": papel("washi"), "--papel-cartao-claro": papel("cartao"),
+        "--papel-pagina-escuro": papel("washi-noite"), "--papel-cartao-escuro": papel("cartao-noite"),
+        "--papel-noite": papel("noite"),
+      };
+
+// Antes de pintar: o modo que a pessoa escolheu, ou o do aparelho.
+const modoAntesDePintar = `(function(){var m;try{m=localStorage.getItem(${JSON.stringify(CHAVE_MODO)})}catch(e){}
+if(m!=="claro"&&m!=="escuro"){m=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"escuro":"claro"}
+document.documentElement.setAttribute("data-tema",m)})()`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" data-app={APP} className={classesDeFonte} style={papeis as CSSProperties}>
+    <html lang="pt-BR" data-app={APP} data-tema="claro" className={classesDeFonte} style={papeis as CSSProperties} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: modoAntesDePintar }} />
+      </head>
       <body>{children}</body>
     </html>
   );

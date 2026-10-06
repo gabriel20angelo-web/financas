@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
-// Um código, dois apps: NEXT_PUBLIC_APP escolhe qual (inari | livro-caixa).
+// Um código, dois apps: NEXT_PUBLIC_APP escolhe qual (inari | snowbobao).
 // No ar, cada um mora em /financas/<app>/ (GitHub Pages do repositório «financas»).
-const app = process.env.NEXT_PUBLIC_APP === 'livro-caixa' ? 'livro-caixa' : 'inari';
+const app = process.env.NEXT_PUBLIC_APP === 'snowbobao' ? 'snowbobao' : 'inari';
 const base = process.env.NODE_ENV === 'production' ? `/financas/${app}` : '';
 
 const nextConfig = {

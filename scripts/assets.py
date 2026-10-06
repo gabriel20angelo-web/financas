@@ -1,8 +1,8 @@
 """Prepara as figuras dos dois apps a partir dos bancos de cada identidade.
 
 Inari (raposa): copia as WebP do site da Raposa Analítica.
-Livro-caixa (gatos): converte as poses do frajola e os elementos recortados
-do Clube Entrelinhas para WebP menores, e as texturas de papel do clube.
+Snowbobão (o gato da Iara Loren): converte para WebP as poses desenhadas por
+scripts/snowbobao_gato.py (o gato de pelúcia de traços, pintado de neve).
 Também gera os ícones de cada app (192, 512 e 180 para o iPhone).
 
 Rodar de novo só quando mudar a lista abaixo:
@@ -15,10 +15,7 @@ from PIL import Image, ImageDraw
 RAIZ = Path(__file__).resolve().parent.parent
 PUB = RAIZ / "public"
 RAPOSA = Path(r"C:\Users\gabri\RaposaAnalitica\public\raposa")
-CLUBE = Path(r"C:\Users\gabri\OneDrive\Desktop\Clube do Livro Entrelinhas - artes")
-POSES = CLUBE / "Mascote - banco de poses" / "png (fundo transparente)"
-ELEMENTOS = CLUBE / "Elementos recortados"
-TEXTURAS = Path(r"C:\Users\gabri\clube_entrelinhas\texturas")
+SNOW = RAIZ / "scripts" / "_snowbobao"
 
 INARI = {
     "fig": ["raposa-inari", "raposa-anotando", "raposa-olhando-lua", "raposa-daruma", "raposa-noren",
@@ -29,20 +26,6 @@ INARI = {
     "cenario": ["inverno", "outono", "primavera", "verao"],
     "mascara": ["kin", "shiro"],
     "kamon": ["raposa", "raposa-claro", "ginkgo-claro", "lua-nuvem-claro"],
-}
-
-GATOS = ["01_sentado", "03_bolinha_dormindo", "06_em_pe_comemorando", "07_de_lado_andando", "11_lendo",
-         "14_cartaz_em_branco", "16_espiando_atras_do_livro", "17_pendurado_na_borda", "19_espiando_de_baixo",
-         "20_feliz", "21_assustado", "25_sonolento", "27_de_oculos", "35_no_alto_da_pilha",
-         "36_comendo_docinhos", "40_bola_de_cristal", "41_tirando_cartas", "42_brincando_com_novelo",
-         "43_escrevendo", "44_detetive_de_lupa", "52_teve_uma_ideia", "53_olhando_as_estrelas",
-         "56_na_caixa", "59_rosto_de_bastet", "60_corujinha_de_ouro"]
-
-ENFEITES = {
-    "1 Lacres e selos": ["lacre_vinho_lua", "lacre_estrelas_douradas", "lacre_coracoes", "lacre_laco_rosa"],
-    "2 Astros": ["estrela_dourada_8_longa", "brilho_dourado_1", "brilho_dourado_2", "lua_dourada_rosto"],
-    "6 Luz e mistério": ["ampulheta", "lanterna_pendurada_1"],
-    "9 Rendas": ["renda_festonada_jade", "renda_festonada_rosa", "renda_delicada_ouro"],
 }
 
 
@@ -87,14 +70,20 @@ def main():
         d.ellipse([m, m, im.width - m, im.height - m], outline="#D7A441", width=max(2, im.width // 90))
         im.save(p)
 
-    # Livro-caixa
-    for n in GATOS:
-        webp(POSES / f"{n}.png", PUB / "livro-caixa" / "gato" / f"{n.split('_', 1)[1].replace('_', '-')}.webp", 520)
-    for pasta, nomes in ENFEITES.items():
-        for n in nomes:
-            webp(ELEMENTOS / pasta / f"{n}.png", PUB / "livro-caixa" / "enfeite" / f"{n.replace('_', '-')}.webp", 360)
-    bastet = Image.open(POSES / "59_rosto_de_bastet.png").convert("RGBA")
-    icone("#C799AA", bastet, PUB / "livro-caixa", escala=0.8, papel=TEXTURAS / "papel3_600x600_C799AA_3_2_2.6_1_0.14_0.32.png")
+    # Snowbobão
+    for png in sorted(SNOW.glob("[!_]*.png")):
+        webp(png, PUB / "snowbobao" / "gato" / f"{png.stem}.webp", 520)
+    # ícone: o rosto do Snowbobão (o alto da pose sentada) à luz de vela, com aro de ouro
+    sentado = Image.open(SNOW / "sentado.png").convert("RGBA")
+    rosto = sentado.crop((0, 0, sentado.width, int(sentado.height * 0.56)))
+    icone("#15100E", rosto, PUB / "snowbobao", escala=0.8, papel=PUB / "snowbobao" / "papel" / "vela.webp")
+    for nome in ["icone-512.png", "icone-192.png", "apple-touch-icon.png"]:
+        p = PUB / "snowbobao" / nome
+        im = Image.open(p).convert("RGB")
+        d = ImageDraw.Draw(im)
+        m = im.width * 0.045
+        d.ellipse([m, m, im.width - m, im.height - m], outline="#E0A867", width=max(2, im.width // 90))
+        im.save(p)
 
     total = sum(f.stat().st_size for f in PUB.rglob("*") if f.is_file())
     print(f"ok: {sum(1 for f in PUB.rglob('*') if f.is_file())} arquivos, {total // 1024} KB")

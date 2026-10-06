@@ -1,4 +1,4 @@
-"""Texturas de papel dos dois apps, com o gerador do Clube Entrelinhas
+"""Texturas de papel dos dois apps (claro e escuro), com o gerador do Clube Entrelinhas
 (clube_entrelinhas/papel.py), sem escurecer a borda. Depois:
 - as manchas grandes descem (todas nos cartões, onde fica o número; parte na
   página), porque repetidas no ladrilho viram desenho;
@@ -24,11 +24,15 @@ PAPEIS = [
     ("inari", "washi", "#F2EBDC", 1.5, 2.2, 0.5, 0.30),
     ("inari", "cartao", "#F8F4EA", 1.0, 1.4, 0.35, 0.18),
     ("inari", "noite", "#13211F", 1.6, 2.0, 0.6, 0.30),
-    ("livro-caixa", "creme", "#EFE2D4", 1.7, 2.6, 0.7, 0.32),
-    ("livro-caixa", "perola", "#FAF5EE", 1.1, 1.6, 0.4, 0.2),
-    ("livro-caixa", "noite", "#30323C", 1.6, 2.2, 0.6, 0.3),
-    ("livro-caixa", "rosa", "#C799AA", 1.4, 2.0, 0.6, 0.28),
-    ("livro-caixa", "jade", "#5F857C", 1.4, 2.0, 0.6, 0.28),
+    # Inari à noite: a mata escura e o cartão de breu
+    ("inari", "washi-noite", "#0E1715", 2.2, 3.0, 0.5, 0.28),
+    ("inari", "cartao-noite", "#16211E", 2.0, 2.6, 0.4, 0.22),
+    # Snowbobão: o papel antigo e a vela do site da Iara Loren
+    ("snowbobao", "pergaminho", "#F2E9DD", 1.6, 2.4, 0.6, 0.30),
+    ("snowbobao", "marfim", "#FFFCF7", 1.0, 1.5, 0.35, 0.18),
+    ("snowbobao", "vela", "#15100E", 2.4, 3.2, 0.6, 0.30),
+    ("snowbobao", "breu", "#0E0C0B", 2.2, 3.0, 0.5, 0.28),
+    ("snowbobao", "couro", "#1A1412", 1.6, 2.2, 0.3, 0.2),
 ]
 
 def sem_manchas(img: Image.Image, manter: float) -> Image.Image:
@@ -52,9 +56,13 @@ def costura(img: Image.Image) -> Image.Image:
 
 
 # quanto das manchas grandes fica: página com um pouco, cartão e faixa quase nada
-MANTER = {"washi": 0.45, "creme": 0.5, "cartao": 0.0, "perola": 0.0, "noite": 0.6, "rosa": 0.3, "jade": 0.3}
+MANTER = {"washi": 0.45, "cartao": 0.0, "noite": 0.6, "washi-noite": 0.12, "cartao-noite": 0.0,
+          "pergaminho": 0.45, "marfim": 0.0, "vela": 0.6, "breu": 0.12, "couro": 0.0}
 
+SO = set(sys.argv[1:])
 for app, nome, cor, forca, fibras, pintas, relevo in PAPEIS:
+    if SO and nome not in SO:
+        continue
     arq = P.papel(640, 640, cor, seed=7, forca=forca, fibras=fibras, pintas=pintas, borda=0, relevo=relevo,
                   nome=f"{app}-{nome}.png")
     tile = costura(sem_manchas(Image.open(arq).convert("RGB"), MANTER[nome]))

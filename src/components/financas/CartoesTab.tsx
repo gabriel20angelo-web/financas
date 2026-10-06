@@ -14,7 +14,7 @@ import {
   parcelasFuturasCartao, dividasAbertasCartao, faturaProjetadaMes, MESES,
   isoLocal,
 } from "@/lib/financas-data";
-import { TEMA } from "@/lib/tema";
+import { TEMA, tinta } from "@/lib/tema";
 
 const CORES_CARTAO = TEMA.coresCartao;
 
@@ -729,7 +729,7 @@ function AjusteModal({
           {credito ? "Adicionar saldo positivo" : "Consumir saldo positivo"}
         </h2>
         <p className="font-dm text-xs mb-3" style={{ color: "var(--text-secondary)" }}>
-          <strong style={{ color: cartao.cor }}>{cartao.nome}</strong> · saldo atual R$ {fmtBRL(saldoPositivoCartao(cartao))}
+          <strong style={{ color: tinta(cartao.cor) }}>{cartao.nome}</strong> · saldo atual R$ {fmtBRL(saldoPositivoCartao(cartao))}
         </p>
         <p className="font-dm text-[11px] mb-4" style={{ color: "var(--text-tertiary)" }}>
           {credito

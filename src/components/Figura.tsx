@@ -13,7 +13,7 @@ export default function Figura({ fig, altura, className = "", style }: {
       src={asset(fig.src)}
       alt={fig.alt}
       draggable={false}
-      className={className}
+      className={`figura ${className}`}
       style={{ height: altura ?? fig.h, width: "auto", ...style }}
     />
   );

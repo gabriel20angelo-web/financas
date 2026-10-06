@@ -59,7 +59,7 @@ export default function Moldura({ children }: { children: React.ReactNode }) {
       if (!vivo) return;
       let dispensou = false;
       try { dispensou = localStorage.getItem(DISPENSOU_ANTIGOS) === "1"; } catch {}
-      if (!dispensou && !temDadosLocais(CHAVES_FINANCAS)) setAntigos(dadosAntigos(CHAVES_FINANCAS));
+      if (TEMA.trazAntigos && !dispensou && !temDadosLocais(CHAVES_FINANCAS)) setAntigos(dadosAntigos(CHAVES_FINANCAS));
       setPronto(true);
     })();
 
@@ -147,7 +147,7 @@ export default function Moldura({ children }: { children: React.ReactNode }) {
         )}
         <div key={versao}>{children}</div>
         <footer className="relative mt-20 flex flex-col items-center gap-1 text-center">
-          <Figura fig={TEMA.rodape} altura={APP === "inari" ? 70 : 64} className="pointer-events-none select-none" />
+          <Figura fig={TEMA.rodape} altura={APP === "inari" ? 70 : 60} className="pointer-events-none select-none" />
           <p className="font-dm text-xs" style={{ color: "var(--text-tertiary)" }}>
             {email ? `Guardado neste aparelho e na conta ${email}.` : "Guardado só neste aparelho. Entre na conta para ver no celular e no computador."}
           </p>
@@ -200,9 +200,11 @@ function ModalEntrar({ onClose, onEntrar }: {
           style={{ background: "var(--orange-500)", color: "var(--sobre-acento)" }}>
           {indo ? "Entrando…" : "Entrar"}
         </button>
-        <p className="font-dm text-[12px] text-center mt-4" style={{ color: "var(--text-tertiary)" }}>
-          É a mesma conta do painel do site da Raposa Analítica.
-        </p>
+        {TEMA.notaDaConta && (
+          <p className="font-dm text-[12px] text-center mt-4" style={{ color: "var(--text-tertiary)" }}>
+            {TEMA.notaDaConta}
+          </p>
+        )}
       </form>
     </div>
   );

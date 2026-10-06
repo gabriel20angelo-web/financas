@@ -1,7 +1,7 @@
 /**
  * Guarda os dados no aparelho (localStorage) e, com a conta entrada, na
  * tabela financas_kv do banco. Cada app tem o seu prefixo, então o Inari e o
- * Livro-caixa nunca se misturam, nem no aparelho nem no banco.
+ * Snowbobão nunca se misturam, nem no aparelho nem no banco.
  *
  * - Salvar: grava no aparelho na hora e manda para o banco em segundo plano.
  * - Abrir (ou entrar na conta): compara chave por chave; ganha a versão mais
