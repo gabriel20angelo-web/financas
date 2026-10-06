@@ -121,7 +121,8 @@
   --linha-ouro: rgba(147, 87, 31, .30);
   --modal-backdrop: rgba(36, 23, 19, .55);
   --sombra-cartinha: 0 1px 0 rgba(58, 36, 27, .05), 0 10px 26px -18px rgba(58, 36, 27, .45);
-  --sombra-figura: drop-shadow(0 0 .7px rgba(94, 74, 64, .7)) drop-shadow(0 3px 4px rgba(36, 23, 19, .14));
+  --sombra-figura: drop-shadow(0 3px 4px rgba(36, 23, 19, .16));
+  --fofo-acento: #C98A3F;
   --esquema: light;
   --f-titulo: var(--font-cormorant), Georgia, serif;
   --f-ui: var(--font-jost), system-ui, sans-serif;
@@ -165,7 +166,9 @@
   --linha-ouro: rgba(224, 168, 103, .30);
   --modal-backdrop: rgba(8, 6, 5, .74);
   --sombra-cartinha: 0 1px 0 rgba(0, 0, 0, .35), 0 14px 30px -18px rgba(0, 0, 0, .95);
-  --sombra-figura: drop-shadow(0 4px 10px rgba(0, 0, 0, .55));
+  /* o frajola é preto: no escuro ganha uma luz de vela na borda */
+  --sombra-figura: drop-shadow(0 0 1px rgba(242, 233, 223, .45)) drop-shadow(0 0 9px rgba(224, 168, 103, .22));
+  --fofo-acento: #E0A867;
   --esquema: dark;
 }
 
@@ -432,10 +435,12 @@ input, select, textarea { color: var(--text-primary); }
 
 /* Snowbobão: rótulo espaçado do site; a ativa é vinho, sublinhada de ouro */
 [data-app="snowbobao"] .aba {
+  min-width: 0;
+  padding: 9px 10px;
   border-radius: 2px;
   font-size: 10.5px;
   font-weight: 500;
-  letter-spacing: .16em;
+  letter-spacing: .12em;
   text-transform: uppercase;
 }
 [data-app="snowbobao"] .aba[aria-selected="true"] {
@@ -458,8 +463,64 @@ input, select, textarea { color: var(--text-primary); }
 @keyframes espia { from { transform: translateY(28px); opacity: 0; } to { transform: none; opacity: 1; } }
 .barra-abas { position: relative; z-index: 1; }
 
-/* o gato branco precisa de um fio de contorno no papel claro; no escuro, sombra */
+/* sombra das figuras; o frajola na faixa (noite nos dois modos) leva luz de vela na borda */
 [data-app="snowbobao"] .figura { filter: var(--sombra-figura); }
+[data-app="snowbobao"] .faixa .figura {
+  filter: drop-shadow(0 0 1px rgba(242, 233, 223, .5)) drop-shadow(0 0 12px rgba(224, 168, 103, .28)) drop-shadow(0 6px 10px rgb(0 0 0 / .35));
+}
+
+/* ─── Snowbobão: os fofos ─── */
+.fofo { flex: none; }
+.aba .fofo { opacity: .9; transition: transform .2s; }
+.aba:hover .fofo { transform: translateY(-1px) rotate(-6deg); }
+[data-app="snowbobao"] .aba[aria-selected="true"] .fofo { --fofo-acento: #E0A867; opacity: 1; animation: pulinho .45s cubic-bezier(.3, 1.6, .5, 1); }
+button:hover .fofo-balanca { animation: balanca .6s ease-in-out; }
+@keyframes pulinho { 40% { transform: translateY(-3px) scale(1.08); } }
+@keyframes balanca { 25% { transform: rotate(-12deg); } 60% { transform: rotate(9deg); } }
+
+/* o balãozinho do gato na faixa */
+.fala {
+  position: absolute;
+  right: 88%;
+  top: 18px;
+  z-index: 2;
+  white-space: nowrap;
+  padding: 6px 13px 7px;
+  border-radius: 16px 16px 4px 16px;
+  background: #F2E9DF;
+  color: #241713;
+  font-family: var(--f-titulo);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 1.1;
+  box-shadow: 0 6px 16px -6px rgb(0 0 0 / .6);
+  transform-origin: 100% 100%;
+  animation: fala .5s cubic-bezier(.3, 1.5, .5, 1) both, flutua 4s ease-in-out .5s infinite;
+}
+.fala::after {
+  content: "";
+  position: absolute;
+  right: -5px;
+  bottom: 2px;
+  width: 11px;
+  height: 11px;
+  background: inherit;
+  clip-path: polygon(0 0, 100% 100%, 0 100%);
+}
+@keyframes fala { from { opacity: 0; transform: scale(.6); } }
+@keyframes flutua { 50% { transform: translateY(-3px); } }
+
+/* as patinhas de ouro andando pela faixa até as velas */
+.patinhas {
+  position: absolute;
+  left: 53%;
+  bottom: 21px;
+  gap: 15px;
+  color: var(--vela);
+  pointer-events: none;
+}
+.patinhas .fofo { opacity: .55; }
 
 /* os cartões do resumo */
 .cartinha { box-shadow: var(--sombra-cartinha); }
@@ -471,5 +532,5 @@ input, select, textarea { color: var(--text-primary); }
 .figura-fluida { max-width: 100%; height: auto; }
 
 @media (prefers-reduced-motion: reduce) {
-  .kitsunebi, .espiando, .chama, .halo, .cintila { animation: none; }
+  .kitsunebi, .espiando, .chama, .halo, .cintila, .fala, .fofo { animation: none !important; }
 }

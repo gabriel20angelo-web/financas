@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Cloud, CloudOff, Download, LogOut, RefreshCw
 import Figura from "@/components/Figura";
 import Losango from "@/components/Losango";
 import ModoTema from "@/components/ModoTema";
+import { Fofo } from "@/components/Fofos";
 import { useConta } from "@/components/Moldura";
 import { APP, TEMA, type Humor } from "@/lib/tema";
 import { MESES } from "@/lib/financas-data";
@@ -47,6 +48,11 @@ export default function Cabecalho({ mY, mM, onMes, humor, onBackup, onImportar }
           <Losango className="cintila" style={{ left: "61%", top: 84, width: 15, height: 15 }} />
           <Losango className="cintila hidden sm:block" style={{ left: "44%", top: 26, width: 20, height: 20, animationDelay: "-2.2s" }} />
           <Losango className="cintila hidden sm:block" style={{ left: "36%", top: 118, width: 10, height: 10, animationDelay: "-3.5s" }} />
+          <div className="patinhas hidden md:flex" aria-hidden>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <Fofo key={i} nome="pata" tamanho={14} style={{ transform: `translateY(${i % 2 ? -5 : 2}px) rotate(80deg)`, animationDelay: `${i * .35}s` }} />
+            ))}
+          </div>
           <div className="velas hidden md:flex" style={{ right: "clamp(200px, 23vw, 260px)" }} aria-hidden>
             <Vela altura={30} />
             <Vela altura={48} atraso="-1.1s" />
@@ -119,12 +125,18 @@ export default function Cabecalho({ mY, mM, onMes, humor, onBackup, onImportar }
               <ChevronRight size={16} />
             </button>
           </div>
+          {snow && TEMA.falas && (
+            <p className="md:hidden font-fraunces italic text-[16px] mt-2.5" style={{ color: "rgb(242 233 223 / .78)", fontSizeAdjust: "none" }}>
+              <span style={{ color: "var(--vela)" }}>“</span>{TEMA.falas[humor]}<span style={{ color: "var(--vela)" }}>”</span>
+            </p>
+          )}
         </div>
 
         <div className="relative shrink-0 self-end" key={humor}>
+          {snow && TEMA.falas && <p className="fala hidden md:block">{TEMA.falas[humor]}</p>}
           <Figura fig={fig} altura={snow ? 156 : 170}
             className="relative block translate-y-1 pointer-events-none select-none max-w-[38vw] object-contain object-bottom"
-            style={{ filter: "drop-shadow(0 6px 10px rgb(0 0 0 / .35))" }} />
+            style={snow ? undefined : { filter: "drop-shadow(0 6px 10px rgb(0 0 0 / .35))" }} />
         </div>
       </div>
 

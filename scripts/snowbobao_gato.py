@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
-"""O Snowbobão: o gato de pelúcia de traços do banco do Entrelinhas, pintado de
-neve (pelo branco-creme com sombra morna, olhos de cobre). Usa as poses do
-motor do clube sem mexer no banco dele: desenha aqui, em scripts/_snowbobao/.
+"""O Snowbobão: o frajola de pelúcia de traços do banco do Entrelinhas (preto e
+branco, olhos verdes), com os livros passados para a paleta da Iara. Usa as
+poses do motor do clube sem mexer no banco dele: desenha aqui, em
+scripts/_snowbobao/. (A primeira versão era branca, «de neve»: NEVE/CREME e
+NEVE_LIGADA = True voltam com ela.)
 
     py scripts/snowbobao_gato.py            -> todas as poses da lista
     py scripts/snowbobao_gato.py 04 21      -> só essas
@@ -14,7 +16,8 @@ sys.path.insert(0, os.path.dirname(MASC))
 import gato_banco as G
 import gato_banco2  # noqa: F401  (registra as poses 27-56 e os gradientes)
 
-# pelo: neve morna; as regiões que no frajola são brancas ficam um tom acima
+# a versão de neve (desligada: ele pediu o frajola de volta em 05/10)
+NEVE_LIGADA = False
 NEVE = dict(base="#F1EBE2", escuro="#BDAFA3", medio="#DED4C8", claro="#FFFFFF", borda="#9A8B80")
 CREME = dict(base="#FFFCF6", escuro="#D9CEC0", medio="#F2EADF", claro="#FFFFFF", borda="#B3A496")
 IRIS = "#D9944A"
@@ -32,19 +35,22 @@ POSES = {
 }
 SAIDA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_snowbobao")
 
-_init = G.Pose.__init__
-def _init_neve(self, *a, **k):
-    _init(self, *a, **k)
-    self.pe, self.pb, self.iris = NEVE, CREME, IRIS
-G.Pose.__init__ = _init_neve
+if NEVE_LIGADA:
+    _init = G.Pose.__init__
+    def _init_neve(self, *a, **k):
+        _init(self, *a, **k)
+        self.pe, self.pb, self.iris = NEVE, CREME, IRIS
+    G.Pose.__init__ = _init_neve
 
 
 def em_neve(svg: str) -> str:
+    for de, para in LIVROS.items():
+        svg = svg.replace(de, para)
+    if not NEVE_LIGADA:
+        return svg
     # no pelo preto os bigodes e a sobrancelha eram claros; na neve viram cinza morno
     svg = svg.replace('stroke="#FFFDF6" stroke-width="1.5"', 'stroke="#8E8076" stroke-width="1.5"')
     svg = svg.replace('stroke="#F6F0E4" stroke-width="7"', 'stroke="#6E5F57" stroke-width="7"')
-    for de, para in LIVROS.items():
-        svg = svg.replace(de, para)
     return svg.replace("#C9D86A", IRIS)  # o olho que a lupa aumenta
 
 

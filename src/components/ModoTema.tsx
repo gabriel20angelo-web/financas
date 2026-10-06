@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { CHAVE_MODO } from "@/lib/tema";
+import { fofo } from "@/components/Fofos";
 
 type Modo = "claro" | "escuro";
 
@@ -49,7 +50,7 @@ export default function ModoTema({ className, style }: { className?: string; sty
     <button onClick={trocar} className={className} style={style}
       aria-label={escuro ? "Passar para o modo claro" : "Passar para o modo escuro"}
       title={escuro ? "Modo claro" : "Modo escuro"}>
-      {escuro ? <Sun size={13} /> : <Moon size={13} />}
+      {escuro ? (fofo("sol", 16) ?? <Sun size={13} />) : (fofo("lua", 16) ?? <Moon size={13} />)}
       <span className="hidden sm:inline">{escuro ? "Claro" : "Escuro"}</span>
     </button>
   );

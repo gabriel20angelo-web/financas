@@ -27,7 +27,6 @@ PAPEIS = [
     # Snowbobão: o papel antigo e a vela do site da Iara Loren
     ("snowbobao", "pergaminho", "#F2E9DD", 1.6, 2.4, 0.6, 0.30),
     ("snowbobao", "marfim", "#FFFCF7", 1.0, 1.5, 0.35, 0.18),
-    ("snowbobao", "vela", "#15100E", 2.4, 3.2, 0.6, 0.30),  # só o fundo do ícone
 ]
 
 def sem_manchas(img: Image.Image, manter: float) -> Image.Image:
@@ -51,7 +50,7 @@ def costura(img: Image.Image) -> Image.Image:
 
 
 # quanto das manchas grandes fica: página com um pouco, cartão e faixa quase nada
-MANTER = {"washi": 0.45, "cartao": 0.0, "noite": 0.6, "pergaminho": 0.45, "marfim": 0.0, "vela": 0.6}
+MANTER = {"washi": 0.45, "cartao": 0.0, "noite": 0.6, "pergaminho": 0.45, "marfim": 0.0}
 
 SO = set(sys.argv[1:])
 for app, nome, cor, forca, fibras, pintas, relevo in PAPEIS:

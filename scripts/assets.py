@@ -73,16 +73,16 @@ def main():
     # Snowbobão
     for png in sorted(SNOW.glob("[!_]*.png")):
         webp(png, PUB / "snowbobao" / "gato" / f"{png.stem}.webp", 520)
-    # ícone: o rosto do Snowbobão (o alto da pose sentada) à luz de vela, com aro de ouro
+    # ícone: o rosto do frajola (o alto da pose sentada) no pergaminho, com aro vinho
     sentado = Image.open(SNOW / "sentado.png").convert("RGBA")
     rosto = sentado.crop((0, 0, sentado.width, int(sentado.height * 0.56)))
-    icone("#15100E", rosto, PUB / "snowbobao", escala=0.8, papel=PUB / "snowbobao" / "papel" / "vela.webp")
+    icone("#F2E9DD", rosto, PUB / "snowbobao", escala=0.8, papel=PUB / "snowbobao" / "papel" / "pergaminho.webp")
     for nome in ["icone-512.png", "icone-192.png", "apple-touch-icon.png"]:
         p = PUB / "snowbobao" / nome
         im = Image.open(p).convert("RGB")
         d = ImageDraw.Draw(im)
         m = im.width * 0.045
-        d.ellipse([m, m, im.width - m, im.height - m], outline="#E0A867", width=max(2, im.width // 90))
+        d.ellipse([m, m, im.width - m, im.height - m], outline="#6E212B", width=max(2, im.width // 90))
         im.save(p)
 
     total = sum(f.stat().st_size for f in PUB.rglob("*") if f.is_file())

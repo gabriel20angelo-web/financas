@@ -10,6 +10,7 @@ import {
 import { CHAVES_FINANCAS, initFinancasSync } from "@/lib/financas-data";
 import { APP, TEMA } from "@/lib/tema";
 import { emailDoLogin, nomeDaConta, senhaDoBanco } from "@/lib/conta";
+import { fofo } from "@/components/Fofos";
 
 // ─── a conta (entrar, sair, sincronizar) ───────────────────────
 
@@ -149,6 +150,11 @@ export default function Moldura({ children }: { children: React.ReactNode }) {
         <div key={versao}>{children}</div>
         <footer className="relative mt-20 flex flex-col items-center gap-1 text-center">
           <Figura fig={TEMA.rodape} altura={APP === "inari" ? 70 : 60} className="pointer-events-none select-none" />
+          {TEMA.assinatura && (
+            <p className="font-fraunces italic text-[17px] flex items-center gap-1.5 mb-1" style={{ color: "var(--text-secondary)" }}>
+              {TEMA.assinatura} <span style={{ color: "var(--orange-500)" }}>{fofo("pata", 14)}</span>
+            </p>
+          )}
           <p className="font-dm text-xs" style={{ color: "var(--text-tertiary)" }}>
             {email ? `Guardado neste aparelho e na conta ${email}.` : "Guardado só neste aparelho. Entre na conta para ver no celular e no computador."}
           </p>

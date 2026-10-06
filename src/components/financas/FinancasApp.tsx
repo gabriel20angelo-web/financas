@@ -28,6 +28,7 @@ import {
   type Cartao, type MovimentoCaixinha, type PagamentoParcialPendencia,
 } from "@/lib/financas-data";
 import { APP, TEMA, humorDoMes, tinta } from "@/lib/tema";
+import { fofo } from "@/components/Fofos";
 
 type TabId = "lancamentos" | "calendario" | "fixos" | "pendencias" | "metas" | "cartoes" | "categorias" | "graficos" | "projecao";
 
@@ -817,14 +818,14 @@ function FinancasInner() {
           className="flex-1 py-3.5 rounded-xl font-dm font-semibold text-sm flex items-center justify-center gap-2 transition-all hover:brightness-110"
           style={{ background: "color-mix(in srgb, var(--neg) 12%, transparent)", color: "var(--neg)", border: "1px solid color-mix(in srgb, var(--neg) 25%, transparent)" }}
         >
-          <Minus size={16} /> Novo gasto
+          {fofo("novelo", 22, "fofo-balanca") ?? <Minus size={16} />} Novo gasto
         </button>
         <button
           onClick={() => setModal({ mode: "entrada", editId: null })}
           className="flex-1 py-3.5 rounded-xl font-dm font-semibold text-sm flex items-center justify-center gap-2 transition-all hover:brightness-110"
           style={{ background: "color-mix(in srgb, var(--pos) 12%, transparent)", color: "var(--pos)", border: "1px solid color-mix(in srgb, var(--pos) 25%, transparent)" }}
         >
-          <Plus size={16} /> Nova entrada
+          {fofo("peixinho", 22, "fofo-balanca") ?? <Plus size={16} />} Nova entrada
         </button>
       </div>
 
@@ -1894,7 +1895,7 @@ function TxModal({
               background: gasto ? "color-mix(in srgb, var(--neg) 12%, transparent)" : "color-mix(in srgb, var(--pos) 12%, transparent)",
               color: gasto ? "var(--neg)" : "var(--pos)",
             }}>
-            {isEdit ? <Pencil size={15} /> : gasto ? <Minus size={15} /> : <Plus size={15} />}
+            {isEdit ? <Pencil size={15} /> : gasto ? (fofo("novelo", 19) ?? <Minus size={15} />) : (fofo("peixinho", 19) ?? <Plus size={15} />)}
           </span>
           {isEdit ? `Editar ${gasto ? "gasto" : "entrada"}` : `${gasto ? "Novo gasto" : "Nova entrada"}`}
         </h2>

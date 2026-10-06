@@ -6,7 +6,8 @@
  * Inari: a raposa. Inari é o kami do arroz e da prosperidade; as raposas são
  * as mensageiras dele e, nos santuários, seguram a chave do celeiro.
  * Snowbobão: as contas da Iara Loren, com a identidade do site dela (vela,
- * vinho, cobre, papel antigo) e o gato branco de pelúcia de traços.
+ * vinho, cobre, papel antigo), o frajola de pelúcia de traços e os ícones
+ * fofos desenhados à mão (components/Fofos.tsx).
  *
  * Os dois têm modo claro e escuro (data-tema no <html>; ver ModoTema.tsx).
  */
@@ -49,6 +50,10 @@ interface Tema {
   notaDaConta?: string;
   /** oferece trazer os dados do antigo Finanças do Meu Consultório */
   trazAntigos: boolean;
+  /** o que o bicho da faixa diz, conforme o mês (balãozinho) */
+  falas?: Record<Humor, string>;
+  /** a linha de assinatura do rodapé */
+  assinatura?: string;
   figurasDaAba: Record<AbaId, Figura>;
   humor: Record<Humor, Figura>;
   carregando: Figura;
@@ -130,6 +135,13 @@ const SNOWBOBAO: Tema = {
   marca: "Iara Loren",
   corDoNavegador: "#15100E",
   trazAntigos: false,
+  falas: {
+    vazio: "zzz… nada anotado ainda",
+    bem: "tudo nos conformes, miau",
+    otimo: "sobrou! hora do sachê",
+    aperto: "eita… saiu mais do que entrou",
+  },
+  assinatura: "com carinho, o Snowbobão",
   figurasDaAba: {
     lancamentos: f("snowbobao/gato/escrevendo.webp", "O Snowbobão escrevendo com pena e tinteiro", 98),
     calendario: f("snowbobao/gato/olhando-as-estrelas.webp", "O Snowbobão olhando a lua e as estrelas", 104),
