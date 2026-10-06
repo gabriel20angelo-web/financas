@@ -1,0 +1,30 @@
+{
+  "name": "financas-raposa-e-gatos",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:inari": "cross-env NEXT_PUBLIC_APP=inari NEXT_DIST=.next-dev-inari next dev -p 3021",
+    "dev:livro-caixa": "cross-env NEXT_PUBLIC_APP=livro-caixa NEXT_DIST=.next-dev-livro-caixa next dev -p 3022",
+    "build:inari": "cross-env NEXT_PUBLIC_APP=inari NEXT_DIST=.next-inari next build",
+    "build:livro-caixa": "cross-env NEXT_PUBLIC_APP=livro-caixa NEXT_DIST=.next-livro-caixa next build",
+    "build": "node scripts/build-tudo.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.99.0",
+    "lucide-react": "^0.441.0",
+    "next": "14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.4.20",
+    "cross-env": "^7.0.3",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}

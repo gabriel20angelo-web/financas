@@ -1,0 +1,2202 @@
+"use client";
+
+import FiguraVazia from "@/components/FiguraVazia";
+import { useEffect, useMemo, useState, useRef } from "react";
+import {
+  Plus, Minus,
+  Pencil, Trash2, Pause, Play, Repeat, AlertCircle, Bell,
+} from "lucide-react";
+import Cabecalho from "@/components/Cabecalho";
+import Abas from "@/components/Abas";
+import EmptyState from "@/components/ui/EmptyState";
+import PendenciasTab from "@/components/financas/PendenciasTab";
+import MetasTab from "@/components/financas/MetasTab";
+import CartoesTab from "@/components/financas/CartoesTab";
+import CalendarioTab from "@/components/financas/CalendarioTab";
+import {
+  getFinancas, saveCats, saveTxs, saveFixos, savePendencias, saveEmprestimos, saveOrcamentos,
+  saveCaixinhas, saveMetas, saveCartoes,
+  MESES, fmtBRL, fmtDiaMes, labelPay, isEntrada, lancamentosDoMes, nextId,
+  resumoPendencias, pendenciaToTx, hojeISO, pagamentoEmprestimoToTx, gastosPorCategoriaMes,
+  resumoMensal, totalReservado, saldoReal, saldoLivre, fixoMesKey,
+  creditoTotalCartoes, dividaCartaoMes, dividaTotalCartoesMes, aplicarCategoriaCaixinhas,
+  reverterCategoriaCaixinhas, addMesesSemRollover,
+  valorPagoPendencia, valorRestantePendencia,
+  saldoPositivoCartao, faturaCartaoMes,
+  type FinancasData, type Transacao, type FixoItem, type Categoria, type TxType, type Pendencia,
+  type Emprestimo, type PagamentoEmprestimo, type Orcamento, type Caixinha, type MetasFinanceiras,
+  type Cartao, type MovimentoCaixinha, type PagamentoParcialPendencia,
+} from "@/lib/financas-data";
+import { APP, TEMA, humorDoMes } from "@/lib/tema";
+
+type TabId = "lancamentos" | "calendario" | "fixos" | "pendencias" | "metas" | "cartoes" | "categorias" | "graficos" | "projecao";
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: "lancamentos", label: "Lançamentos" },
+  { id: "calendario", label: "Calendário" },
+  { id: "fixos", label: "Fixos" },
+  { id: "pendencias", label: "Pendências" },
+  { id: "metas", label: "Metas & Caixinhas" },
+  { id: "cartoes", label: "Cartões" },
+  { id: "categorias", label: "Categorias" },
+  { id: "graficos", label: "Gráficos" },
+  { id: "projecao", label: "Projeção" },
+];
+
+const TIPO_LABEL: Record<string, string> = {
+  fixo: "Fixo", variavel: "Variável", pontual: "Pontual",
+  entrada: "Entrada", entrada_fixa: "Entrada fixa", ganho: "Entrada",
+};
+
+function tipoPillStyle(type: string): React.CSSProperties {
+  if (type === "fixo") return { background: "color-mix(in srgb, var(--info) 12%, transparent)", color: "var(--info)" };
+  if (type === "variavel") return { background: "color-mix(in srgb, var(--alerta) 12%, transparent)", color: "var(--alerta)" };
+  if (type === "pontual") return { background: "color-mix(in srgb, var(--aviso) 12%, transparent)", color: "var(--aviso)" };
+  return { background: "color-mix(in srgb, var(--pos) 12%, transparent)", color: "var(--pos)" };
+}
+
+// ─── Page ──────────────────────────────────────────
+
+export default function FinancasApp() {
+  return <FinancasInner />;
+}
+
+const CHAVE_ABA = `${APP}:aba`;
+
+function FinancasInner() {
+  const [data, setData] = useState<FinancasData>({
+    cats: [], txs: [], fixos: [], pendencias: [], emprestimos: [], orcamentos: [],
+    caixinhas: [], metas: {}, cartoes: [],
+  });
+  const [tab, setTabState] = useState<TabId>(() => {
+    try {
+      const salva = sessionStorage.getItem(CHAVE_ABA) as TabId | null;
+      if (salva && TABS.some((t) => t.id === salva)) return salva;
+    } catch {}
+    return "lancamentos";
+  });
+  function setTab(id: TabId) {
+    setTabState(id);
+    try { sessionStorage.setItem(CHAVE_ABA, id); } catch {}
+  }
+  const [mY, setMY] = useState(() => new Date().getFullYear());
+  const [mM, setMM] = useState(() => new Date().getMonth());
+
+  // Modal state (lançamento)
+  const [modal, setModal] = useState<null | { mode: "gasto" | "entrada"; editId: number | null }>(null);
+
+  // Fixo form state
+  const [fxEdit, setFxEdit] = useState<FixoItem | null>(null);
+
+  useEffect(() => {
+    setData(getFinancas());
+  }, []);
+
+  function commit(next: Partial<FinancasData>) {
+    setData((d) => {
+      const merged = { ...d, ...next };
+      if (next.cats) saveCats(next.cats);
+      if (next.txs) saveTxs(next.txs);
+      if (next.fixos) saveFixos(next.fixos);
+      if (next.pendencias) savePendencias(next.pendencias);
+      if (next.emprestimos) saveEmprestimos(next.emprestimos);
+      if (next.orcamentos) saveOrcamentos(next.orcamentos);
+      if (next.caixinhas) saveCaixinhas(next.caixinhas);
+      if (next.metas) saveMetas(next.metas);
+      if (next.cartoes) saveCartoes(next.cartoes);
+      return merged;
+    });
+  }
+
+  const txs = useMemo(() => lancamentosDoMes(data, mY, mM), [data, mY, mM]);
+
+  // Summary
+  const sum = useMemo(() => {
+    let entradas = 0, gastos = 0, fixo = 0, variavel = 0;
+    for (const t of txs) {
+      if (isEntrada(t.type)) entradas += t.val;
+      else {
+        gastos += t.val;
+        if (t.type === "fixo") fixo += t.val;
+        if (t.type === "variavel") variavel += t.val;
+      }
+    }
+    return { entradas, gastos, saldo: entradas - gastos, fixo, variavel };
+  }, [txs]);
+
+  function chgMonth(delta: number) {
+    let y = mY, m = mM + delta;
+    if (m > 11) { m = 0; y++; }
+    if (m < 0)  { m = 11; y--; }
+    setMY(y); setMM(m);
+  }
+
+  // ─── Import / Export ───
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function exportJSON() {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.download = `${APP}-${hojeISO()}.json`;
+    a.href = URL.createObjectURL(blob);
+    a.click();
+  }
+
+  function importJSON(ev: React.ChangeEvent<HTMLInputElement>) {
+    const f = ev.target.files?.[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = (e) => {
+      try {
+        const d = JSON.parse(String(e.target?.result));
+        if (d.txs && d.cats) {
+          if (!d.fixos) d.fixos = [];
+          if (!d.pendencias) d.pendencias = [];
+          if (!d.emprestimos) d.emprestimos = [];
+          if (!d.orcamentos) d.orcamentos = [];
+          if (!d.caixinhas) d.caixinhas = [];
+          if (!d.metas) d.metas = {};
+          if (!d.cartoes) d.cartoes = [];
+          commit(d);
+          alert("Importado com sucesso.");
+        } else alert("Arquivo inválido.");
+      } catch { alert("Erro ao ler arquivo."); }
+    };
+    r.readAsText(f);
+    ev.target.value = "";
+  }
+
+  // ─── Lançamento CRUD ───
+
+  function deleteTx(id: number) {
+    if (!confirm("Excluir este lançamento?")) return;
+    // Reverte movimentos auto-gerados por categoria vinculada
+    const newCaixinhas = reverterCategoriaCaixinhas(id, data.caixinhas);
+    commit({ txs: data.txs.filter((t) => t.id !== id), caixinhas: newCaixinhas });
+  }
+
+  function submitTx(form: TxForm) {
+    const { desc, val, date, type, cat, pay, parcelado, parcelas, editId } = form;
+    if (!desc.trim() || isNaN(val) || !date) { alert("Preencha todos os campos."); return; }
+    let newTxs = [...data.txs];
+    let newCaixinhas = data.caixinhas;
+    if (editId) {
+      // Ao editar, reverter qualquer movimento auto-gerado antes de re-aplicar
+      newCaixinhas = reverterCategoriaCaixinhas(editId, newCaixinhas);
+      newTxs = newTxs.map((t) => t.id === editId ? { ...t, desc, val, date, type, cat, pay } : t);
+      const editedTx = newTxs.find((t) => t.id === editId);
+      if (editedTx) {
+        newCaixinhas = aplicarCategoriaCaixinhas(editedTx, newCaixinhas);
+      }
+    } else if (parcelado && parcelas > 1) {
+      const gidBase = nextId();
+      const valParcBase = +(val / parcelas).toFixed(2);
+      for (let i = 0; i < parcelas; i++) {
+        // Última parcela absorve o resto para que soma == val original
+        const valParc = i === parcelas - 1
+          ? +(val - valParcBase * (parcelas - 1)).toFixed(2)
+          : valParcBase;
+        const parcelaDate = addMesesSemRollover(date, i);
+        const newTx: Transacao = {
+          id: nextId(),
+          desc, val: valParc,
+          date: parcelaDate,
+          type, cat, pay,
+          parc: `${i + 1}/${parcelas}`, pg: gidBase,
+        };
+        newTxs.push(newTx);
+        // aplicarCategoriaCaixinhas já filtra por data futura
+        newCaixinhas = aplicarCategoriaCaixinhas(newTx, newCaixinhas);
+      }
+    } else {
+      const newTx: Transacao = {
+        id: nextId(), desc, val, date, type, cat, pay, parc: null, pg: null,
+      };
+      newTxs.push(newTx);
+      newCaixinhas = aplicarCategoriaCaixinhas(newTx, newCaixinhas);
+    }
+    commit({ txs: newTxs, caixinhas: newCaixinhas });
+    setModal(null);
+  }
+
+  // ─── Fixos CRUD ───
+
+  function submitFixo(form: FixoForm) {
+    const { desc, val, type, cat, pay, day, editId } = form;
+    if (!desc.trim() || isNaN(val)) { alert("Preencha descrição e valor."); return; }
+    if (editId) {
+      commit({ fixos: data.fixos.map((f) => f.id === editId ? { ...f, desc, val, type, cat, pay, day } : f) });
+    } else {
+      commit({ fixos: [...data.fixos, { id: nextId(), desc, val, type, cat, pay, day, active: true }] });
+    }
+    setFxEdit(null);
+  }
+  function toggleFixo(id: number) {
+    commit({ fixos: data.fixos.map((f) => f.id === id ? { ...f, active: !f.active } : f) });
+  }
+  function deleteFixo(id: number) {
+    if (!confirm("Remover este item fixo?")) return;
+    commit({ fixos: data.fixos.filter((f) => f.id !== id) });
+  }
+
+  // ─── Pendências ───
+
+  function savePendenciasList(pendencias: Pendencia[]) {
+    commit({ pendencias });
+  }
+
+  function quitarPendencia(id: number, payDate: string, valorPago?: number) {
+    const p = data.pendencias.find((x) => x.id === id);
+    if (!p) return;
+    const restante = valorRestantePendencia(p);
+    const valor = valorPago != null && valorPago > 0 ? Math.min(valorPago, restante) : restante;
+    if (valor <= 0) return;
+
+    const tx = pendenciaToTx(p, payDate, valor);
+
+    const novoPagamento: PagamentoParcialPendencia = {
+      id: nextId(),
+      data: payDate,
+      valor,
+      tx_id: tx.id,
+    };
+    const pagamentosAtualizados = [...(p.pagamentos_parciais || []), novoPagamento];
+    const totalPago = pagamentosAtualizados.reduce((a, pp) => a + pp.valor, 0);
+    const quitadoCompleto = totalPago + 0.005 >= p.val;
+
+    const newPendencias = data.pendencias.map((x) =>
+      x.id === id
+        ? {
+            ...x,
+            pagamentos_parciais: pagamentosAtualizados,
+            status: quitadoCompleto ? ("quitado" as const) : ("aberto" as const),
+            quitado_em: quitadoCompleto ? payDate : x.quitado_em,
+            tx_id: quitadoCompleto ? tx.id : x.tx_id,
+          }
+        : x
+    );
+
+    // Se pendência estava vinculada a uma caixinha, criar movimento compatível (pelo valor pago agora)
+    let newCaixinhas = data.caixinhas;
+    const skipCaixinhas: number[] = [];
+    if (p.caixinha_id) {
+      const tipo: MovimentoCaixinha["tipo"] = p.kind === "receber" ? "deposito" : "saque";
+      const mov: MovimentoCaixinha = {
+        id: nextId(),
+        tipo,
+        valor,
+        data: payDate,
+        notas: p.kind === "receber" ? `Recebido: ${p.desc}` : `Pago: ${p.desc}`,
+      };
+      newCaixinhas = newCaixinhas.map((c) => c.id === p.caixinha_id
+        ? { ...c, movimentos: [...c.movimentos, mov] }
+        : c);
+      skipCaixinhas.push(p.caixinha_id);
+    }
+
+    // Auto cat vinculada — pula a caixinha que já foi tocada manualmente
+    newCaixinhas = aplicarCategoriaCaixinhas(tx, newCaixinhas, skipCaixinhas);
+
+    commit({ txs: [...data.txs, tx], pendencias: newPendencias, caixinhas: newCaixinhas });
+  }
+
+  const resumoPend = useMemo(() => resumoPendencias(data.pendencias), [data.pendencias]);
+  const temAlerta = resumoPend.qtd_vencidas > 0 || resumoPend.qtd_proximas_7d > 0;
+
+  // ─── Empréstimos ───
+
+  function saveEmprestimosList(emprestimos: Emprestimo[]) {
+    commit({ emprestimos });
+  }
+
+  function registrarPagamentoEmprestimo(emprestimoId: number, pag: PagamentoEmprestimo) {
+    const e = data.emprestimos.find((x) => x.id === emprestimoId);
+    if (!e) return;
+    const tx = pagamentoEmprestimoToTx(e, pag);
+    const pagamentoComTx = { ...pag, tx_id: tx.id };
+    const newEmprestimos = data.emprestimos.map((x) => {
+      if (x.id !== emprestimoId) return x;
+      const novosPagamentos = [...x.pagamentos, pagamentoComTx];
+      const pago = novosPagamentos.reduce((a, p) => a + p.valor, 0);
+      return {
+        ...x,
+        pagamentos: novosPagamentos,
+        status: pago >= x.valor_original ? "quitado" as const : "aberto" as const,
+      };
+    });
+
+    // Se for "emprestei" com caixinha destino, depositar na caixinha ao receber
+    let newCaixinhas = data.caixinhas;
+    const skipCaixinhas: number[] = [];
+    if (e.direcao === "emprestei" && e.caixinha_id) {
+      const mov: MovimentoCaixinha = {
+        id: nextId(),
+        tipo: "deposito",
+        valor: pag.valor,
+        data: pag.data,
+        notas: `Recebimento de empréstimo: ${e.pessoa}`,
+      };
+      newCaixinhas = newCaixinhas.map((c) => c.id === e.caixinha_id
+        ? { ...c, movimentos: [...c.movimentos, mov] }
+        : c);
+      skipCaixinhas.push(e.caixinha_id);
+    }
+
+    // Auto cat vinculada — pula caixinha já tocada manualmente
+    newCaixinhas = aplicarCategoriaCaixinhas(tx, newCaixinhas, skipCaixinhas);
+
+    commit({ txs: [...data.txs, tx], emprestimos: newEmprestimos, caixinhas: newCaixinhas });
+  }
+
+  // Remover pagamento de empréstimo: reverte tx + movimentos de caixinha
+  function removerPagamentoEmprestimo(emprestimoId: number, pagId: number) {
+    const e = data.emprestimos.find((x) => x.id === emprestimoId);
+    if (!e) return;
+    const pag = e.pagamentos.find((p) => p.id === pagId);
+    if (!pag) return;
+    // Remove tx associada
+    const newTxs = pag.tx_id ? data.txs.filter((t) => t.id !== pag.tx_id) : data.txs;
+    // Reverte auto cat vinculada
+    let newCaixinhas = pag.tx_id
+      ? reverterCategoriaCaixinhas(pag.tx_id, data.caixinhas)
+      : data.caixinhas;
+    // Reverte depósito manual na caixinha do empréstimo (se havia)
+    if (e.caixinha_id && e.direcao === "emprestei") {
+      const tagDep = `Recebimento de empréstimo: ${e.pessoa}`;
+      newCaixinhas = newCaixinhas.map((c) => c.id === e.caixinha_id
+        ? {
+            ...c,
+            movimentos: c.movimentos.filter((m) =>
+              !(m.notas === tagDep && m.data === pag.data && m.valor === pag.valor)
+            ),
+          }
+        : c);
+    }
+    const newEmprestimos = data.emprestimos.map((x) => {
+      if (x.id !== emprestimoId) return x;
+      const novosPag = x.pagamentos.filter((p) => p.id !== pagId);
+      const pago = novosPag.reduce((a, p) => a + p.valor, 0);
+      return {
+        ...x,
+        pagamentos: novosPag,
+        status: pago >= x.valor_original ? "quitado" as const : "aberto" as const,
+      };
+    });
+    commit({ txs: newTxs, emprestimos: newEmprestimos, caixinhas: newCaixinhas });
+  }
+
+  // ─── Orçamentos ───
+
+  function saveOrcamentosList(orcamentos: Orcamento[]) {
+    commit({ orcamentos });
+  }
+
+  const gastosMesPorCat = useMemo(
+    () => gastosPorCategoriaMes(data, mY, mM),
+    [data, mY, mM]
+  );
+
+  // ─── Metas & Caixinhas ───
+
+  function saveCaixinhasList(caixinhas: Caixinha[]) {
+    // Detecta caixinhas deletadas e desvincula pendências/emprestimos que
+    // apontavam pra elas, para evitar referências órfãs.
+    const idsDepois = new Set(caixinhas.map((c) => c.id));
+    const deletadas = data.caixinhas
+      .map((c) => c.id)
+      .filter((id) => !idsDepois.has(id));
+    let newPendencias = data.pendencias;
+    let newEmprestimos = data.emprestimos;
+    if (deletadas.length > 0) {
+      newPendencias = data.pendencias.map((p) =>
+        p.caixinha_id && deletadas.includes(p.caixinha_id)
+          ? { ...p, caixinha_id: undefined }
+          : p
+      );
+      newEmprestimos = data.emprestimos.map((e) =>
+        e.caixinha_id && deletadas.includes(e.caixinha_id)
+          ? { ...e, caixinha_id: undefined }
+          : e
+      );
+    }
+    commit({ caixinhas, pendencias: newPendencias, emprestimos: newEmprestimos });
+  }
+  function saveMetasObj(metas: MetasFinanceiras) {
+    commit({ metas });
+  }
+
+  const patrimonio = useMemo(() => totalReservado(data.caixinhas), [data.caixinhas]);
+  const resumo = useMemo(() => resumoMensal(data, mY, mM), [data, mY, mM]);
+  const saldoRealVal = useMemo(() => saldoReal(data), [data]);
+  const saldoLivreVal = useMemo(() => saldoLivre(data), [data]);
+  const creditoCartoes = useMemo(() => creditoTotalCartoes(data.cartoes), [data.cartoes]);
+  const dividaCartoes = useMemo(
+    () => dividaTotalCartoesMes(data.cartoes, data.txs, data.fixos, mY, mM),
+    [data.cartoes, data.txs, data.fixos, mY, mM]
+  );
+
+  // Contexto do fixo-a-pagar que abre o modal de realização
+  const [realizarModal, setRealizarModal] = useState<FixoItem | null>(null);
+  // Modal de ajuste manual de saldo
+  const [ajusteSaldoModal, setAjusteSaldoModal] = useState(false);
+
+  // Realizar fixo: cria tx real + marca fixo como realizado + opcional saque caixinha
+  function realizarFixo(fixoId: number, payDate: string, caixinhaId?: number) {
+    const f = data.fixos.find((x) => x.id === fixoId);
+    if (!f) return;
+    const key = fixoMesKey(
+      parseInt(payDate.slice(0, 4)),
+      parseInt(payDate.slice(5, 7)) - 1
+    );
+    const tx: Transacao = {
+      id: nextId(),
+      desc: f.desc,
+      val: f.val,
+      date: payDate,
+      type: f.type === "entrada_fixa" ? "entrada" : "variavel",
+      cat: f.cat,
+      pay: f.pay,
+      parc: null,
+      pg: null,
+    };
+    const newFixos = data.fixos.map((x) => x.id === fixoId
+      ? { ...x, realizacoes: { ...(x.realizacoes || {}), [key]: tx.id } }
+      : x);
+
+    let newCaixinhas = data.caixinhas;
+    const skipCaixinhas: number[] = [];
+    if (caixinhaId && f.type === "fixo") {
+      const mov: MovimentoCaixinha = {
+        id: nextId(),
+        tipo: "saque",
+        valor: f.val,
+        data: payDate,
+        notas: `Pagamento de fixo: ${f.desc}`,
+      };
+      newCaixinhas = newCaixinhas.map((c) => c.id === caixinhaId
+        ? { ...c, movimentos: [...c.movimentos, mov] }
+        : c);
+      skipCaixinhas.push(caixinhaId);
+    }
+
+    // Auto cat vinculada — pula a caixinha que já foi tocada manualmente
+    newCaixinhas = aplicarCategoriaCaixinhas(tx, newCaixinhas, skipCaixinhas);
+
+    commit({ txs: [...data.txs, tx], fixos: newFixos, caixinhas: newCaixinhas });
+    setRealizarModal(null);
+  }
+
+  // Desmarcar uma realização de fixo (volta a ser projetado naquele mês)
+  function desrealizarFixo(fixoId: number, mesKey: string) {
+    const f = data.fixos.find((x) => x.id === fixoId);
+    if (!f || !f.realizacoes?.[mesKey]) return;
+    if (!confirm("Desfazer o pagamento deste fixo neste mês? A transação associada e movimentos automáticos serão removidos.")) return;
+    const txId = f.realizacoes[mesKey];
+    const novasRealiz = { ...f.realizacoes };
+    delete novasRealiz[mesKey];
+    // Reverte auto cat vinculada e movimentos "Pagamento de fixo: X" criados
+    // durante realizarFixo (saque manual em caixinha escolhida)
+    const tagFixoManual = `Pagamento de fixo: ${f.desc}`;
+    const caixinhasRevertidas = reverterCategoriaCaixinhas(txId, data.caixinhas).map((c) => ({
+      ...c,
+      movimentos: c.movimentos.filter((m) => m.notas !== tagFixoManual),
+    }));
+    commit({
+      txs: data.txs.filter((t) => t.id !== txId),
+      fixos: data.fixos.map((x) => x.id === fixoId ? { ...x, realizacoes: novasRealiz } : x),
+      caixinhas: caixinhasRevertidas,
+    });
+  }
+
+  // Ajuste manual do saldo real da conta (cria tx de reconciliação)
+  function ajustarSaldoManual(novoSaldo: number) {
+    const atual = saldoRealVal;
+    const diff = +(novoSaldo - atual).toFixed(2);
+    if (Math.abs(diff) < 0.01) { alert("Sem diferença para ajustar."); return; }
+    const tx: Transacao = {
+      id: nextId(),
+      desc: "Ajuste manual de saldo",
+      val: Math.abs(diff),
+      date: hojeISO(),
+      type: diff > 0 ? "entrada" : "variavel",
+      cat: "Ajuste",
+      pay: "conta",
+      parc: null,
+      pg: null,
+    };
+    let novasCats = data.cats;
+    if (!data.cats.find((c) => c.n === "Ajuste")) {
+      novasCats = [...data.cats, { n: "Ajuste", c: TEMA.corAjuste }];
+    }
+    commit({ txs: [...data.txs, tx], cats: novasCats });
+    setAjusteSaldoModal(false);
+  }
+
+  function saveCartoesList(cartoes: Cartao[]) {
+    // Detecta rename: se um cartão existente mudou de nome, propaga nas txs
+    // e fixos para que fatura/saldo positivo continuem ligados corretamente.
+    let txsUpdated = data.txs;
+    let fixosUpdated = data.fixos;
+    for (const c of cartoes) {
+      const old = data.cartoes.find((x) => x.id === c.id);
+      if (old && old.nome !== c.nome) {
+        const oldPay = "c:" + old.nome;
+        const newPay = "c:" + c.nome;
+        txsUpdated = txsUpdated.map((t) => t.pay === oldPay ? { ...t, pay: newPay } : t);
+        fixosUpdated = fixosUpdated.map((f) => f.pay === oldPay ? { ...f, pay: newPay } : f);
+      }
+    }
+    commit({ cartoes, txs: txsUpdated, fixos: fixosUpdated });
+  }
+
+  function addGastoCartao(cartao: Cartao, form: {
+    desc: string; val: number; date: string; cat: string;
+    parcelar: boolean; parcelas: number; usar_saldo_positivo: boolean;
+  }) {
+    const { desc, val, date, cat, parcelar, parcelas, usar_saldo_positivo } = form;
+    const pay = "c:" + cartao.nome;
+
+    // Gera transações (com ou sem parcelas)
+    const novasTx: Transacao[] = [];
+    if (parcelar && parcelas > 1) {
+      const gid = nextId();
+      const valParcBase = +(val / parcelas).toFixed(2);
+      for (let i = 0; i < parcelas; i++) {
+        // Última parcela absorve o resto para garantir soma == val
+        const valParc = i === parcelas - 1
+          ? +(val - valParcBase * (parcelas - 1)).toFixed(2)
+          : valParcBase;
+        novasTx.push({
+          id: nextId(),
+          desc, val: valParc,
+          date: addMesesSemRollover(date, i),
+          type: "variavel",
+          cat, pay,
+          parc: `${i + 1}/${parcelas}`,
+          pg: gid,
+        });
+      }
+    } else {
+      novasTx.push({
+        id: nextId(),
+        desc, val, date, type: "variavel", cat, pay,
+        parc: null, pg: null,
+      });
+    }
+
+    // Consumir saldo positivo se pedido
+    let cartoesUpdated = data.cartoes;
+    if (usar_saldo_positivo) {
+      const saldo = cartao.ajustes.reduce(
+        (a, x) => a + (x.tipo === "credito" ? x.valor : -x.valor),
+        0
+      );
+      const aplicado = Math.min(saldo, val);
+      if (aplicado > 0) {
+        cartoesUpdated = data.cartoes.map((c) => c.id === cartao.id
+          ? {
+              ...c,
+              ajustes: [
+                ...c.ajustes,
+                {
+                  id: nextId(),
+                  tipo: "debito" as const,
+                  valor: aplicado,
+                  data: date,
+                  notas: `Consumido em: ${desc}`,
+                },
+              ],
+            }
+          : c);
+      }
+    }
+
+    // Auto cat vinculada (cada tx criada pode ativar uma caixinha vinculada)
+    let caixinhasUpdated = data.caixinhas;
+    for (const t of novasTx) {
+      caixinhasUpdated = aplicarCategoriaCaixinhas(t, caixinhasUpdated);
+    }
+
+    commit({ txs: [...data.txs, ...novasTx], cartoes: cartoesUpdated, caixinhas: caixinhasUpdated });
+  }
+
+  // ─── Categorias ───
+  function addCat(n: string, c: string) {
+    if (!n.trim()) return;
+    if (data.cats.find((x) => x.n.toLowerCase() === n.toLowerCase())) { alert("Já existe."); return; }
+    commit({ cats: [...data.cats, { n: n.trim(), c }] });
+  }
+  function removeCat(i: number) {
+    const cat = data.cats[i];
+    if (!cat) return;
+    const usosTxs = data.txs.filter((t) => t.cat === cat.n).length;
+    const usosFixos = data.fixos.filter((f) => f.cat === cat.n).length;
+    const usosPend = data.pendencias.filter((p) => p.cat === cat.n).length;
+    const usosOrc = data.orcamentos.filter((o) => o.cat === cat.n).length;
+    const caixinhasVinc = data.caixinhas.filter((c) => c.cat_vinculada === cat.n);
+    const totalUsos = usosTxs + usosFixos + usosPend + usosOrc + caixinhasVinc.length;
+    const msg = totalUsos > 0
+      ? `"${cat.n}" está em uso (${usosTxs} lançamentos, ${usosFixos} fixos, ${usosPend} pendências, ${usosOrc} orçamentos, ${caixinhasVinc.length} caixinhas vinculadas). Remover mesmo assim?`
+      : `Remover "${cat.n}"?`;
+    if (!confirm(msg)) return;
+    const nc = [...data.cats]; nc.splice(i, 1);
+    // Remove orçamento dessa categoria também
+    const novosOrc = data.orcamentos.filter((o) => o.cat !== cat.n);
+    // Remove vínculo da caixinha
+    const novasCaixinhas = data.caixinhas.map((c) =>
+      c.cat_vinculada === cat.n ? { ...c, cat_vinculada: undefined } : c
+    );
+    commit({ cats: nc, orcamentos: novosOrc, caixinhas: novasCaixinhas });
+  }
+
+  const cartoesConhecidos = useMemo(() => {
+    const s = new Set<string>();
+    data.txs.forEach((t) => { if (t.pay?.startsWith("c:")) s.add(t.pay.slice(2)); });
+    data.fixos.forEach((f) => { if (f.pay?.startsWith("c:")) s.add(f.pay.slice(2)); });
+    data.cartoes.forEach((c) => { if (c.ativo) s.add(c.nome); });
+    return Array.from(s);
+  }, [data.txs, data.fixos, data.cartoes]);
+
+  // ─── Render ───
+
+  return (
+    <div>
+      <Cabecalho
+        mY={mY}
+        mM={mM}
+        onMes={chgMonth}
+        humor={humorDoMes(sum.entradas, sum.gastos, txs.length)}
+        onBackup={exportJSON}
+        onImportar={() => fileRef.current?.click()}
+      />
+      <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={importJSON} />
+
+      {/* Banner de saldos reais (global, não mensal) */}
+      <div className="rounded-xl p-4 mb-3 grid grid-cols-3 gap-4 cartinha"
+        style={{
+          background: "var(--bg-card)",
+          border: "1px solid var(--border-default)",
+        }}>
+        <div>
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <p className="font-dm text-[9px] uppercase tracking-wider font-semibold"
+              style={{ color: "var(--text-tertiary)" }}>
+              Saldo real na conta
+            </p>
+            <button onClick={() => setAjusteSaldoModal(true)}
+              className="font-dm text-[9px] font-semibold px-2 py-0.5 rounded"
+              style={{
+                background: "var(--orange-glow)",
+                color: "var(--orange-500)",
+                border: "1px solid var(--border-orange)",
+              }}
+              title="Ajustar manualmente para bater com sua conta">
+              Ajustar
+            </button>
+          </div>
+          <p className="font-fraunces text-lg sm:text-xl whitespace-nowrap" style={{ color: saldoRealVal >= 0 ? "var(--text-primary)" : "var(--neg)" }}>
+            R$ {fmtBRL(Math.abs(saldoRealVal))}
+          </p>
+          <p className="font-dm text-[9px] mt-0.5" style={{ color: "var(--text-tertiary)" }}>
+            Lançado até hoje
+          </p>
+        </div>
+        <div style={{ borderLeft: "1px solid var(--border-subtle)", paddingLeft: 16 }}>
+          <p className="font-dm text-[9px] uppercase tracking-wider font-semibold mb-1"
+            style={{ color: "var(--text-tertiary)" }}>
+            Livre
+          </p>
+          <p className="font-fraunces text-lg sm:text-xl whitespace-nowrap" style={{ color: saldoLivreVal >= 0 ? "var(--pos)" : "var(--neg)" }}>
+            R$ {fmtBRL(Math.abs(saldoLivreVal))}
+          </p>
+          <p className="font-dm text-[9px] mt-0.5" style={{ color: "var(--text-tertiary)" }}>
+            Fora das caixinhas
+          </p>
+        </div>
+        <div style={{ borderLeft: "1px solid var(--border-subtle)", paddingLeft: 16 }}>
+          <p className="font-dm text-[9px] uppercase tracking-wider font-semibold mb-1"
+            style={{ color: "var(--text-tertiary)" }}>
+            Reservado
+          </p>
+          <p className="font-fraunces text-lg sm:text-xl whitespace-nowrap" style={{ color: "var(--orange-500)" }}>
+            R$ {fmtBRL(patrimonio)}
+          </p>
+          <p className="font-dm text-[9px] mt-0.5" style={{ color: "var(--text-tertiary)" }}>
+            Em {data.caixinhas.filter((c) => !c.arquivada).length} caixinhas
+          </p>
+        </div>
+      </div>
+
+      {/* Banner dos cartões */}
+      {data.cartoes.some((c) => c.ativo) && (
+        <button
+          onClick={() => setTab("cartoes")}
+          className="w-full rounded-xl p-3 mb-4 flex items-center gap-3 text-left transition-all hover:brightness-105"
+          style={{
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-default)",
+          }}>
+          <div className="flex-1 grid grid-cols-2 gap-4">
+            <div>
+              <p className="font-dm text-[9px] uppercase tracking-wider font-semibold"
+                style={{ color: "var(--text-tertiary)" }}>
+                Crédito em cartões
+              </p>
+              <p className="font-mono text-base font-semibold"
+                style={{ color: creditoCartoes > 0 ? "var(--pos)" : "var(--text-tertiary)" }}>
+                {creditoCartoes > 0 ? "+ " : ""}R$ {fmtBRL(creditoCartoes)}
+              </p>
+            </div>
+            <div style={{ borderLeft: "1px solid var(--border-subtle)", paddingLeft: 16 }}>
+              <p className="font-dm text-[9px] uppercase tracking-wider font-semibold"
+                style={{ color: "var(--text-tertiary)" }}>
+                Dívida do mês em cartões
+              </p>
+              <p className="font-mono text-base font-semibold"
+                style={{ color: dividaCartoes > 0 ? "var(--neg)" : "var(--text-tertiary)" }}>
+                {dividaCartoes > 0 ? "− " : ""}R$ {fmtBRL(dividaCartoes)}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1.5 max-w-[40%]">
+            {data.cartoes.filter((c) => c.ativo).map((c) => {
+              const credito = Math.max(0, saldoPositivoCartao(c));
+              const divida = dividaCartaoMes(c, data.txs, data.fixos, mY, mM);
+              return (
+                <div key={c.id}
+                  className="px-2 py-1 rounded-md font-dm text-[9px] inline-flex items-center gap-1"
+                  style={{
+                    background: c.cor + "15",
+                    border: `1px solid ${c.cor}33`,
+                    color: "var(--text-secondary)",
+                  }}>
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: c.cor }} />
+                  <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{c.nome}</span>
+                  {credito > 0 && (
+                    <span style={{ color: "var(--pos)" }}>+{fmtBRL(credito)}</span>
+                  )}
+                  {divida > 0 && (
+                    <span style={{ color: "var(--neg)" }}>−{fmtBRL(divida)}</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </button>
+      )}
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <SummaryCard label="Saldo" value={(sum.saldo >= 0 ? "+ " : "− ") + "R$ " + fmtBRL(Math.abs(sum.saldo))}
+          tone={sum.saldo >= 0 ? "pos" : "neg"} sub={MESES[mM]} />
+        <SummaryCard label="Entradas" value={"R$ " + fmtBRL(sum.entradas)} tone="pos"
+          sub={`${txs.filter((t) => isEntrada(t.type)).length} lançamentos`} />
+        <SummaryCard label="Gastos" value={"R$ " + fmtBRL(sum.gastos)} tone="neg"
+          sub={`${txs.filter((t) => !isEntrada(t.type)).length} lançamentos`} />
+        {resumo.disponivel > 0 || resumo.meta_economia > 0 ? (
+          <SummaryCard
+            label="Disponível este mês"
+            value={"R$ " + fmtBRL(resumo.disponivel)}
+            tone={resumo.disponivel > 0 ? "pos" : "neg"}
+            sub={resumo.dias_restantes > 0 ? `R$ ${fmtBRL(resumo.por_dia_restante)}/dia · ${resumo.dias_restantes}d` : "Projetado"}
+          />
+        ) : (
+          <SummaryCard
+            label="Fixos / Variáveis"
+            value={`R$ ${fmtBRL(sum.fixo)} / R$ ${fmtBRL(sum.variavel)}`}
+            tone="neutral"
+            sub={patrimonio > 0 ? `Reservado: R$ ${fmtBRL(patrimonio)}` : "No mês"}
+          />
+        )}
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex flex-col md:flex-row gap-3 mb-6">
+        <button
+          onClick={() => setModal({ mode: "gasto", editId: null })}
+          className="flex-1 py-3.5 rounded-xl font-dm font-semibold text-sm flex items-center justify-center gap-2 transition-all hover:brightness-110"
+          style={{ background: "color-mix(in srgb, var(--neg) 12%, transparent)", color: "var(--neg)", border: "1px solid color-mix(in srgb, var(--neg) 25%, transparent)" }}
+        >
+          <Minus size={16} /> Novo gasto
+        </button>
+        <button
+          onClick={() => setModal({ mode: "entrada", editId: null })}
+          className="flex-1 py-3.5 rounded-xl font-dm font-semibold text-sm flex items-center justify-center gap-2 transition-all hover:brightness-110"
+          style={{ background: "color-mix(in srgb, var(--pos) 12%, transparent)", color: "var(--pos)", border: "1px solid color-mix(in srgb, var(--pos) 25%, transparent)" }}
+        >
+          <Plus size={16} /> Nova entrada
+        </button>
+      </div>
+
+      <Abas abas={TABS} ativa={tab} onTrocar={(id) => setTab(id as TabId)} />
+
+      {/* Alert banner */}
+      {temAlerta && (
+        <button
+          onClick={() => setTab("pendencias")}
+          className="w-full flex items-center gap-3 p-3.5 rounded-xl mb-4 text-left transition-all hover:brightness-105"
+          style={{
+            background: resumoPend.qtd_vencidas > 0 ? "color-mix(in srgb, var(--neg) 8%, transparent)" : "color-mix(in srgb, var(--alerta) 8%, transparent)",
+            border: `1px solid ${resumoPend.qtd_vencidas > 0 ? "color-mix(in srgb, var(--neg) 25%, transparent)" : "color-mix(in srgb, var(--alerta) 25%, transparent)"}`,
+          }}
+        >
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{
+              background: resumoPend.qtd_vencidas > 0 ? "color-mix(in srgb, var(--neg) 15%, transparent)" : "color-mix(in srgb, var(--alerta) 15%, transparent)",
+              color: resumoPend.qtd_vencidas > 0 ? "var(--neg)" : "var(--alerta)",
+            }}>
+            {resumoPend.qtd_vencidas > 0 ? <AlertCircle size={16} /> : <Bell size={16} />}
+          </div>
+          <div className="flex-1 min-w-0">
+            {resumoPend.qtd_vencidas > 0 && (
+              <div className="font-dm text-xs font-semibold" style={{ color: "var(--neg)" }}>
+                {resumoPend.qtd_vencidas} {resumoPend.qtd_vencidas === 1 ? "pendência vencida" : "pendências vencidas"}
+                {" · "}R$ {fmtBRL(resumoPend.vencidos_pagar + resumoPend.vencidos_receber)}
+              </div>
+            )}
+            {resumoPend.qtd_proximas_7d > 0 && (
+              <div className="font-dm text-xs" style={{ color: "var(--text-secondary)" }}>
+                {resumoPend.qtd_proximas_7d} {resumoPend.qtd_proximas_7d === 1 ? "vence" : "vencem"} nos próximos 7 dias
+              </div>
+            )}
+            <div className="font-dm text-[10px] mt-1" style={{ color: "var(--text-tertiary)" }}>
+              A pagar 30d: R$ {fmtBRL(resumoPend.a_pagar_30d)} · A receber 30d: R$ {fmtBRL(resumoPend.a_receber_30d)}
+            </div>
+          </div>
+          <span className="font-dm text-[10px] font-semibold" style={{ color: "var(--orange-500)" }}>
+            Ver →
+          </span>
+        </button>
+      )}
+
+      {tab === "lancamentos" && (
+        <LancamentosTab
+          txs={txs}
+          cats={data.cats}
+          onEdit={(t) => setModal({ mode: isEntrada(t.type) ? "entrada" : "gasto", editId: t.id })}
+          onDelete={deleteTx}
+          onRealizarFixo={(fixoId) => {
+            const f = data.fixos.find((x) => x.id === fixoId);
+            if (f) setRealizarModal(f);
+          }}
+        />
+      )}
+
+      {tab === "calendario" && (
+        <CalendarioTab
+          txs={data.txs}
+          cats={data.cats}
+          mY={mY}
+          mM={mM}
+        />
+      )}
+
+      {tab === "fixos" && (
+        <FixosTab
+          fixos={data.fixos}
+          cats={data.cats}
+          cartoes={cartoesConhecidos}
+          editing={fxEdit}
+          onStartEdit={setFxEdit}
+          onCancelEdit={() => setFxEdit(null)}
+          onSubmit={submitFixo}
+          onToggle={toggleFixo}
+          onDelete={deleteFixo}
+          onDesrealizar={desrealizarFixo}
+        />
+      )}
+
+      {tab === "cartoes" && (
+        <CartoesTab
+          cartoes={data.cartoes}
+          txs={data.txs}
+          fixos={data.fixos}
+          cats={data.cats}
+          mY={mY}
+          mM={mM}
+          mesLabel={`${MESES[mM]} ${mY}`}
+          onSave={saveCartoesList}
+          onAddGasto={addGastoCartao}
+        />
+      )}
+
+      {tab === "metas" && (
+        <MetasTab
+          caixinhas={data.caixinhas}
+          metas={data.metas}
+          resumo={resumo}
+          patrimonio={patrimonio}
+          mesLabel={`${MESES[mM]} ${mY}`}
+          mY={mY}
+          mM={mM}
+          cats={data.cats}
+          pendencias={data.pendencias}
+          emprestimos={data.emprestimos}
+          onSaveCaixinhas={saveCaixinhasList}
+          onSaveMetas={saveMetasObj}
+        />
+      )}
+
+      {tab === "pendencias" && (
+        <PendenciasTab
+          pendencias={data.pendencias}
+          emprestimos={data.emprestimos}
+          cats={data.cats}
+          caixinhas={data.caixinhas}
+          cartoes={cartoesConhecidos}
+          onSave={savePendenciasList}
+          onSaveEmprestimos={saveEmprestimosList}
+          onQuitar={quitarPendencia}
+          onRegistrarPagamentoEmprestimo={registrarPagamentoEmprestimo}
+          onRemoverPagamentoEmprestimo={removerPagamentoEmprestimo}
+        />
+      )}
+
+      {tab === "categorias" && (
+        <CategoriasTab cats={data.cats} onAdd={addCat} onRemove={removeCat} />
+      )}
+
+      {tab === "graficos" && (
+        <GraficosTab
+          txs={txs}
+          cats={data.cats}
+          entradas={sum.entradas}
+          gastos={sum.gastos}
+          orcamentos={data.orcamentos}
+          gastosPorCat={gastosMesPorCat}
+          onSaveOrcamentos={saveOrcamentosList}
+        />
+      )}
+
+      {tab === "projecao" && (
+        <ProjecaoTab data={data} baseY={mY} baseM={mM} />
+      )}
+
+      {modal && (
+        <TxModal
+          mode={modal.mode}
+          editTx={modal.editId ? data.txs.find((t) => t.id === modal.editId) || null : null}
+          cats={data.cats}
+          cartoes={cartoesConhecidos}
+          onClose={() => setModal(null)}
+          onSubmit={submitTx}
+        />
+      )}
+
+      {realizarModal && (
+        <RealizarFixoModal
+          fixo={realizarModal}
+          caixinhas={data.caixinhas.filter((c) => !c.arquivada)}
+          onClose={() => setRealizarModal(null)}
+          onConfirm={(payDate, caixinhaId) => realizarFixo(realizarModal.id, payDate, caixinhaId)}
+        />
+      )}
+
+      {ajusteSaldoModal && (
+        <AjusteSaldoModal
+          saldoAtual={saldoRealVal}
+          onClose={() => setAjusteSaldoModal(false)}
+          onConfirm={ajustarSaldoManual}
+        />
+      )}
+
+    </div>
+  );
+}
+
+// ─── Summary card ──────────────────────────────────
+
+function SummaryCard({
+  label, value, tone, sub,
+}: { label: string; value: string; tone: "pos" | "neg" | "neutral"; sub: string }) {
+  const color = tone === "pos" ? "var(--pos)" : tone === "neg" ? "var(--neg)" : "var(--text-primary)";
+  return (
+    <div className="rounded-xl p-5 relative overflow-hidden cartinha"
+      style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)" }}>
+      <p className="font-dm text-[10px] uppercase tracking-wider font-semibold mb-2"
+        style={{ color: "var(--text-tertiary)" }}>
+        {label}
+      </p>
+      <p className="font-fraunces text-2xl" style={{ color }}>
+        {value}
+      </p>
+      <p className="font-dm text-[11px] mt-1" style={{ color: "var(--text-tertiary)" }}>{sub}</p>
+    </div>
+  );
+}
+
+// ─── Lançamentos Tab ───────────────────────────────
+
+function LancamentosTab({
+  txs, cats, onEdit, onDelete, onRealizarFixo,
+}: {
+  txs: (Transacao & { _fixo?: boolean })[];
+  cats: Categoria[];
+  onEdit: (t: Transacao) => void;
+  onDelete: (id: number) => void;
+  onRealizarFixo: (fixoId: number) => void;
+}) {
+  if (!txs.length) {
+    return (
+      <div className="rounded-xl p-10 text-center"
+        style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)" }}>
+        <EmptyState message={TEMA.textos.vazioLancamentos} />
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-xl overflow-hidden"
+      style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)" }}>
+      <div className="px-4 py-3 flex justify-between items-center" style={{ borderBottom: "1px solid var(--border-default)" }}>
+        <span className="font-dm text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>
+          Lançamentos do mês
+        </span>
+        <span className="font-dm text-[11px]" style={{ color: "var(--text-tertiary)" }}>
+          {txs.length} {txs.length === 1 ? "item" : "itens"}
+        </span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr style={{ borderBottom: "1px solid var(--border-default)" }}>
+              <Th>Data</Th><Th>Descrição</Th><Th>Tipo</Th><Th>Categoria</Th>
+              <Th>Pagamento</Th><Th>Parcela</Th><Th alignRight>Valor</Th><Th></Th>
+            </tr>
+          </thead>
+          <tbody>
+            {txs.map((t) => {
+              const entrada = isEntrada(t.type);
+              const catO = cats.find((c) => c.n === t.cat);
+              const catBg = catO ? catO.c + "22" : "color-mix(in srgb, var(--neutro) 15%, transparent)";
+              const catFg = catO ? catO.c : "var(--neutro)";
+              return (
+                <tr key={t.id}
+                  style={{
+                    borderBottom: "1px solid var(--border-subtle)",
+                    background: t._fixo ? "color-mix(in srgb, var(--roxo) 4%, transparent)" : undefined,
+                  }}>
+                  <Td mono>{fmtDiaMes(t.date)}</Td>
+                  <Td>
+                    <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>{t.desc}</span>
+                    {t._fixo && (
+                      <span className="ml-2 font-dm text-[9px] font-bold inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded"
+                        style={{ color: "var(--roxo)", background: "color-mix(in srgb, var(--roxo) 10%, transparent)" }}
+                        title="Fixo projetado — ainda não saiu da conta">
+                        <Repeat size={9} /> PROJETADO
+                      </span>
+                    )}
+                  </Td>
+                  <Td>
+                    <span className="px-2 py-0.5 rounded font-dm text-[9px] font-bold uppercase tracking-wide"
+                      style={tipoPillStyle(t.type)}>
+                      {TIPO_LABEL[t.type] || t.type}
+                    </span>
+                  </Td>
+                  <Td>
+                    <span className="px-2 py-0.5 rounded-full font-dm text-[10px]"
+                      style={{ background: catBg, color: catFg, fontWeight: 500 }}>
+                      {t.cat || "—"}
+                    </span>
+                  </Td>
+                  <Td>
+                    <span className="px-1.5 py-0.5 rounded font-dm text-[9px]"
+                      style={{ background: "var(--bg-hover)", color: "var(--text-tertiary)" }}>
+                      {labelPay(t.pay)}
+                    </span>
+                  </Td>
+                  <Td>
+                    {t.parc && (
+                      <span className="font-dm text-[10px] font-semibold" style={{ color: "var(--orange-500)" }}>
+                        {t.parc}
+                      </span>
+                    )}
+                  </Td>
+                  <Td alignRight>
+                    <span className="font-mono text-xs font-semibold whitespace-nowrap"
+                      style={{ color: entrada ? "var(--pos)" : "var(--neg)" }}>
+                      {entrada ? "+ " : "− "}R$ {fmtBRL(t.val)}
+                    </span>
+                  </Td>
+                  <Td>
+                    {t._fixo ? (
+                      <button
+                        onClick={() => onRealizarFixo(-t.id)}
+                        className="px-2 py-1 rounded font-dm text-[10px] font-semibold inline-flex items-center gap-1 whitespace-nowrap"
+                        style={{
+                          background: "color-mix(in srgb, var(--pos) 12%, transparent)",
+                          color: "var(--pos)",
+                          border: "1px solid color-mix(in srgb, var(--pos) 25%, transparent)",
+                        }}
+                        title="Marcar como pago — cria um lançamento real"
+                      >
+                        ✓ Pagar
+                      </button>
+                    ) : (
+                      <div className="flex gap-1">
+                        <IconBtn onClick={() => onEdit(t)} title="Editar"><Pencil size={12} /></IconBtn>
+                        <IconBtn onClick={() => onDelete(t.id)} title="Excluir" danger><Trash2 size={12} /></IconBtn>
+                      </div>
+                    )}
+                  </Td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function Th({ children, alignRight }: { children?: React.ReactNode; alignRight?: boolean }) {
+  return (
+    <th className="font-dm text-[9px] uppercase tracking-wider font-semibold px-4 py-2.5"
+      style={{ color: "var(--text-tertiary)", textAlign: alignRight ? "right" : "left" }}>
+      {children}
+    </th>
+  );
+}
+
+function Td({ children, alignRight, mono }: { children?: React.ReactNode; alignRight?: boolean; mono?: boolean }) {
+  return (
+    <td className={"px-4 py-2.5 " + (mono ? "font-mono text-[11px]" : "text-xs")}
+      style={{ color: "var(--text-secondary)", textAlign: alignRight ? "right" : "left", verticalAlign: "middle" }}>
+      {children}
+    </td>
+  );
+}
+
+function IconBtn({
+  children, onClick, title, danger,
+}: { children: React.ReactNode; onClick: () => void; title: string; danger?: boolean }) {
+  return (
+    <button onClick={onClick} title={title}
+      className="w-7 h-7 rounded-md border flex items-center justify-center transition-all"
+      style={{
+        borderColor: "transparent",
+        color: "var(--text-tertiary)",
+        background: "transparent",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = danger ? "var(--neg)" : "var(--orange-500)";
+        e.currentTarget.style.color = danger ? "var(--neg)" : "var(--orange-500)";
+        e.currentTarget.style.background = danger ? "color-mix(in srgb, var(--neg) 8%, transparent)" : "var(--orange-glow)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = "transparent";
+        e.currentTarget.style.color = "var(--text-tertiary)";
+        e.currentTarget.style.background = "transparent";
+      }}>
+      {children}
+    </button>
+  );
+}
+
+// ─── Fixos Tab ─────────────────────────────────────
+
+interface FixoForm {
+  desc: string; val: number; type: "fixo" | "entrada_fixa";
+  cat: string; pay: string; day: number; editId: number | null;
+}
+
+function FixosTab({
+  fixos, cats, cartoes, editing, onStartEdit, onCancelEdit, onSubmit, onToggle, onDelete, onDesrealizar,
+}: {
+  fixos: FixoItem[];
+  cats: Categoria[];
+  cartoes: string[];
+  editing: FixoItem | null;
+  onStartEdit: (f: FixoItem) => void;
+  onCancelEdit: () => void;
+  onSubmit: (f: FixoForm) => void;
+  onDesrealizar: (fixoId: number, mesKey: string) => void;
+  onToggle: (id: number) => void;
+  onDelete: (id: number) => void;
+}) {
+  const [desc, setDesc] = useState("");
+  const [val, setVal] = useState("");
+  const [type, setType] = useState<"fixo" | "entrada_fixa">("fixo");
+  const [cat, setCat] = useState(cats[0]?.n || "");
+  const [pay, setPay] = useState("pix");
+  const [day, setDay] = useState(5);
+
+  useEffect(() => {
+    if (editing) {
+      setDesc(editing.desc);
+      setVal(String(editing.val));
+      setType(editing.type);
+      setCat(editing.cat);
+      setPay(editing.pay);
+      setDay(editing.day);
+    } else {
+      setDesc(""); setVal(""); setType("fixo");
+      setCat(cats[0]?.n || ""); setPay("pix"); setDay(5);
+    }
+  }, [editing, cats]);
+
+  function handleSubmit() {
+    onSubmit({
+      desc, val: parseFloat(val), type, cat, pay, day,
+      editId: editing?.id ?? null,
+    });
+    if (!editing) { setDesc(""); setVal(""); }
+  }
+
+  return (
+    <div>
+      <p className="font-dm text-[11px] font-semibold uppercase tracking-wider mb-1"
+        style={{ color: "var(--text-tertiary)" }}>
+        Gastos e entradas que se repetem todo mês
+      </p>
+      <p className="font-dm text-[11px] italic mb-5" style={{ color: "var(--text-tertiary)" }}>
+        Estes valores aparecem automaticamente em todos os meses.
+      </p>
+
+      <div className="rounded-xl p-5 mb-5"
+        style={{
+          background: "var(--bg-card)",
+          border: `1px solid ${type === "entrada_fixa" ? "color-mix(in srgb, var(--pos) 25%, transparent)" : "var(--border-default)"}`,
+        }}>
+        <p className="font-dm text-xs font-semibold mb-4"
+          style={{ color: type === "entrada_fixa" ? "var(--pos)" : "var(--text-primary)" }}>
+          {editing
+            ? (type === "entrada_fixa" ? "✎ Editando entrada mensal" : "✎ Editando gasto fixo")
+            : (type === "entrada_fixa" ? "+ Nova entrada mensal" : "+ Novo gasto fixo")}
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+          <Field label="Descrição">
+            <Input value={desc} onChange={setDesc} placeholder="Ex: Aluguel, Salário..." />
+          </Field>
+          <Field label="Valor (R$)">
+            <Input type="number" value={val} onChange={setVal} placeholder="0,00" />
+          </Field>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+          <Field label="Tipo">
+            <Select value={type} onChange={(v) => setType(v as any)}>
+              <option value="fixo">Gasto fixo</option>
+              <option value="entrada_fixa">Entrada fixa</option>
+            </Select>
+          </Field>
+          <Field label="Categoria">
+            <Select value={cat} onChange={setCat}>
+              {cats.map((c) => <option key={c.n} value={c.n}>{c.n}</option>)}
+            </Select>
+          </Field>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+          <Field label="Pagamento">
+            <PaySelect value={pay} onChange={setPay} cartoes={cartoes} />
+          </Field>
+          <Field label="Dia do mês">
+            <Input type="number" value={String(day)} onChange={(v) => setDay(parseInt(v) || 1)} />
+          </Field>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={handleSubmit}
+            className="px-5 py-2.5 rounded-lg font-dm text-xs font-semibold text-white transition-all hover:brightness-110"
+            style={{ background: type === "entrada_fixa" ? "var(--pos)" : "var(--orange-500)" }}>
+            {editing
+              ? "Salvar alterações"
+              : type === "entrada_fixa" ? "+ Adicionar entrada mensal" : "+ Adicionar gasto fixo"}
+          </button>
+          {editing && (
+            <button onClick={onCancelEdit}
+              className="px-4 py-2.5 rounded-lg font-dm text-xs font-semibold transition-all"
+              style={{ background: "var(--bg-hover)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }}>
+              Cancelar
+            </button>
+          )}
+        </div>
+      </div>
+
+      {fixos.length === 0 ? (
+        <div className="rounded-xl p-8 text-center"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)" }}>
+          <FiguraVazia />
+          <p className="font-dm text-xs" style={{ color: "var(--text-tertiary)" }}>
+            Nenhum item fixo cadastrado.
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-xl overflow-hidden"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)" }}>
+          <div className="px-4 py-3 flex justify-between items-center" style={{ borderBottom: "1px solid var(--border-default)" }}>
+            <span className="font-dm text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>
+              Itens fixos mensais
+            </span>
+            <span className="font-dm text-[11px]" style={{ color: "var(--text-tertiary)" }}>
+              {fixos.length} itens
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--border-default)" }}>
+                  <Th>Descrição</Th><Th>Tipo</Th><Th>Categoria</Th>
+                  <Th>Pagamento</Th><Th>Dia</Th><Th alignRight>Valor</Th><Th></Th>
+                </tr>
+              </thead>
+              <tbody>
+                {fixos.map((f) => {
+                  const entrada = f.type === "entrada_fixa";
+                  const catO = cats.find((c) => c.n === f.cat);
+                  const catBg = catO ? catO.c + "22" : "color-mix(in srgb, var(--neutro) 15%, transparent)";
+                  const catFg = catO ? catO.c : "var(--neutro)";
+                  return (
+                    <tr key={f.id} style={{
+                      borderBottom: "1px solid var(--border-subtle)",
+                      opacity: f.active === false ? 0.4 : 1,
+                    }}>
+                      <Td>
+                        <div style={{ color: "var(--text-primary)", fontWeight: 500 }}>{f.desc}</div>
+                        {f.realizacoes && Object.keys(f.realizacoes).length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {Object.keys(f.realizacoes).sort().reverse().slice(0, 6).map((key) => {
+                              const [yy, mm] = key.split("-");
+                              return (
+                                <button
+                                  key={key}
+                                  onClick={() => onDesrealizar(f.id, key)}
+                                  className="font-dm text-[9px] px-1.5 py-0.5 rounded inline-flex items-center gap-1 transition-all"
+                                  style={{
+                                    background: "color-mix(in srgb, var(--pos) 10%, transparent)",
+                                    color: "var(--pos)",
+                                    border: "1px solid color-mix(in srgb, var(--pos) 20%, transparent)",
+                                  }}
+                                  title="Desfazer pagamento deste mês"
+                                >
+                                  ✓ {MESES[parseInt(mm) - 1].slice(0, 3)}/{yy.slice(2)} ×
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </Td>
+                      <Td>
+                        <span className="px-2 py-0.5 rounded font-dm text-[9px] font-bold uppercase tracking-wide"
+                          style={tipoPillStyle(entrada ? "entrada" : "fixo")}>
+                          {entrada ? "Entrada" : "Gasto"}
+                        </span>
+                      </Td>
+                      <Td>
+                        <span className="px-2 py-0.5 rounded-full font-dm text-[10px]"
+                          style={{ background: catBg, color: catFg, fontWeight: 500 }}>
+                          {f.cat || "—"}
+                        </span>
+                      </Td>
+                      <Td>
+                        <span className="px-1.5 py-0.5 rounded font-dm text-[9px]"
+                          style={{ background: "var(--bg-hover)", color: "var(--text-tertiary)" }}>
+                          {labelPay(f.pay)}
+                        </span>
+                      </Td>
+                      <Td mono><span style={{ color: "var(--text-tertiary)" }}>Dia {f.day}</span></Td>
+                      <Td alignRight>
+                        <span className="font-mono text-xs font-semibold whitespace-nowrap"
+                          style={{ color: entrada ? "var(--pos)" : "var(--neg)" }}>
+                          {entrada ? "+ " : "− "}R$ {fmtBRL(f.val)}
+                        </span>
+                      </Td>
+                      <Td>
+                        <div className="flex gap-1">
+                          <IconBtn onClick={() => onToggle(f.id)} title={f.active === false ? "Ativar" : "Pausar"}>
+                            {f.active === false ? <Play size={12} /> : <Pause size={12} />}
+                          </IconBtn>
+                          <IconBtn onClick={() => onStartEdit(f)} title="Editar"><Pencil size={12} /></IconBtn>
+                          <IconBtn onClick={() => onDelete(f.id)} title="Excluir" danger><Trash2 size={12} /></IconBtn>
+                        </div>
+                      </Td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Categorias Tab ────────────────────────────────
+
+function CategoriasTab({
+  cats, onAdd, onRemove,
+}: { cats: Categoria[]; onAdd: (n: string, c: string) => void; onRemove: (i: number) => void }) {
+  const [name, setName] = useState("");
+  const [color, setColor] = useState(TEMA.corCategoriaNova);
+  return (
+    <div>
+      <p className="font-dm text-[11px] font-semibold uppercase tracking-wider mb-4"
+        style={{ color: "var(--text-tertiary)" }}>
+        Suas categorias
+      </p>
+      <div className="flex flex-wrap gap-2 mb-6">
+        {cats.map((c, i) => (
+          <div key={c.n} className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)" }}>
+            <div className="w-2.5 h-2.5 rounded-sm" style={{ background: c.c }} />
+            <span className="font-dm text-xs" style={{ color: "var(--text-secondary)" }}>{c.n}</span>
+            <button onClick={() => onRemove(i)} className="text-[11px] hover:text-red-500"
+              style={{ color: "var(--text-tertiary)" }}>
+              ✕
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-2 items-center flex-wrap">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Nova categoria..."
+          className="px-3 py-2 rounded-lg font-dm text-xs outline-none"
+          style={{ background: "var(--bg-input)", color: "var(--text-primary)", border: "1px solid var(--border-default)", width: 180 }}
+        />
+        <input
+          type="color"
+          value={color}
+          onChange={(e) => setColor(e.target.value)}
+          className="w-9 h-9 rounded-lg cursor-pointer"
+          style={{ border: "1px solid var(--border-default)", background: "none" }}
+        />
+        <button onClick={() => { onAdd(name, color); setName(""); }}
+          className="px-4 py-2 rounded-lg font-dm text-xs font-semibold text-white"
+          style={{ background: "var(--orange-500)" }}>
+          + Criar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Gráficos Tab ──────────────────────────────────
+
+function GraficosTab({
+  txs, cats, entradas, gastos, orcamentos, gastosPorCat, onSaveOrcamentos,
+}: {
+  txs: Transacao[];
+  cats: Categoria[];
+  entradas: number;
+  gastos: number;
+  orcamentos: Orcamento[];
+  gastosPorCat: Record<string, number>;
+  onSaveOrcamentos: (o: Orcamento[]) => void;
+}) {
+  const byCat = useMemo(() => {
+    const map = new Map<string, number>();
+    txs.filter((t) => !isEntrada(t.type))
+      .forEach((t) => map.set(t.cat || "Outros", (map.get(t.cat || "Outros") || 0) + t.val));
+    return Array.from(map.entries());
+  }, [txs]);
+
+  const total = byCat.reduce((a, [, v]) => a + v, 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl p-6"
+        style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)" }}>
+        <p className="font-dm text-[11px] font-bold uppercase tracking-wider mb-5"
+          style={{ color: "var(--text-tertiary)" }}>
+          Gastos por categoria
+        </p>
+        {byCat.length === 0 ? (
+          <p className="font-dm text-xs text-center py-6" style={{ color: "var(--text-tertiary)" }}>
+            Sem gastos este mês.
+          </p>
+        ) : (
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <Donut data={byCat.map(([label, value]) => ({
+              label, value, color: cats.find((c) => c.n === label)?.c || "var(--neutro)",
+            }))} />
+            <div className="flex-1 w-full space-y-2">
+              {byCat.map(([label, value]) => {
+                const cor = cats.find((c) => c.n === label)?.c || "var(--neutro)";
+                const pct = total > 0 ? (value / total) * 100 : 0;
+                return (
+                  <div key={label} className="flex items-center gap-3">
+                    <div className="w-2.5 h-2.5 rounded-sm" style={{ background: cor }} />
+                    <span className="flex-1 font-dm text-xs" style={{ color: "var(--text-secondary)" }}>{label}</span>
+                    <span className="font-mono text-[11px]" style={{ color: "var(--text-tertiary)" }}>
+                      {pct.toFixed(0)}%
+                    </span>
+                    <span className="font-mono text-xs font-semibold min-w-[80px] text-right"
+                      style={{ color: "var(--text-primary)" }}>
+                      R$ {fmtBRL(value)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-xl p-6"
+        style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)" }}>
+        <p className="font-dm text-[11px] font-bold uppercase tracking-wider mb-5"
+          style={{ color: "var(--text-tertiary)" }}>
+          Entradas vs Gastos
+        </p>
+        <FlowBar label="Entradas" value={entradas} max={Math.max(entradas, gastos, 1)} color="var(--pos)" />
+        <div className="h-3" />
+        <FlowBar label="Gastos" value={gastos} max={Math.max(entradas, gastos, 1)} color="var(--neg)" />
+      </div>
+
+      <OrcamentosCard
+        cats={cats}
+        orcamentos={orcamentos}
+        gastosPorCat={gastosPorCat}
+        onSave={onSaveOrcamentos}
+      />
+    </div>
+  );
+}
+
+function OrcamentosCard({
+  cats, orcamentos, gastosPorCat, onSave,
+}: {
+  cats: Categoria[];
+  orcamentos: Orcamento[];
+  gastosPorCat: Record<string, number>;
+  onSave: (o: Orcamento[]) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<Record<string, string>>({});
+
+  function startEdit() {
+    const d: Record<string, string> = {};
+    for (const o of orcamentos) d[o.cat] = String(o.limite);
+    setDraft(d);
+    setEditing(true);
+  }
+
+  function saveEdit() {
+    const novos: Orcamento[] = [];
+    for (const cat of Object.keys(draft)) {
+      const v = parseFloat(draft[cat]);
+      if (!isNaN(v) && v > 0) novos.push({ cat, limite: v });
+    }
+    onSave(novos);
+    setEditing(false);
+  }
+
+  const temOrcamento = orcamentos.length > 0;
+
+  return (
+    <div className="rounded-xl p-6"
+      style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)" }}>
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
+        <p className="font-dm text-[11px] font-bold uppercase tracking-wider"
+          style={{ color: "var(--text-tertiary)" }}>
+          Orçamentos por categoria
+        </p>
+        {editing ? (
+          <div className="flex gap-2">
+            <button onClick={() => setEditing(false)}
+              className="px-3 py-1.5 rounded-md font-dm text-[11px]"
+              style={{ background: "var(--bg-hover)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }}>
+              Cancelar
+            </button>
+            <button onClick={saveEdit}
+              className="px-3 py-1.5 rounded-md font-dm text-[11px] font-semibold text-white"
+              style={{ background: "var(--orange-500)" }}>
+              Salvar
+            </button>
+          </div>
+        ) : (
+          <button onClick={startEdit}
+            className="px-3 py-1.5 rounded-md font-dm text-[11px] font-semibold"
+            style={{ background: "var(--orange-glow)", color: "var(--orange-500)", border: "1px solid var(--border-orange)" }}>
+            {temOrcamento ? "Editar limites" : "+ Definir limites"}
+          </button>
+        )}
+      </div>
+
+      {!editing && !temOrcamento && (
+        <p className="font-dm text-xs text-center py-4" style={{ color: "var(--text-tertiary)" }}>
+          Defina um limite mensal por categoria para ver o progresso aqui.
+        </p>
+      )}
+
+      {editing && (
+        <div className="space-y-2">
+          {cats.map((c) => (
+            <div key={c.n} className="flex items-center gap-3">
+              <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: c.c }} />
+              <span className="flex-1 font-dm text-xs" style={{ color: "var(--text-secondary)" }}>{c.n}</span>
+              <span className="font-dm text-[11px]" style={{ color: "var(--text-tertiary)" }}>R$</span>
+              <input
+                type="number"
+                value={draft[c.n] || ""}
+                onChange={(e) => setDraft({ ...draft, [c.n]: e.target.value })}
+                placeholder="0"
+                className="w-24 px-2 py-1.5 rounded-md font-mono text-xs outline-none"
+                style={{
+                  background: "var(--bg-input)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border-default)",
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!editing && temOrcamento && (
+        <div className="space-y-3">
+          {orcamentos.map((o) => {
+            const gasto = gastosPorCat[o.cat] || 0;
+            const pct = (gasto / o.limite) * 100;
+            const cor = cats.find((c) => c.n === o.cat)?.c || "var(--neutro)";
+            const estourado = pct > 100;
+            const proximo = pct > 80 && pct <= 100;
+            return (
+              <div key={o.cat}>
+                <div className="flex justify-between items-center mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-sm" style={{ background: cor }} />
+                    <span className="font-dm text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
+                      {o.cat}
+                    </span>
+                    {estourado && (
+                      <span className="font-dm text-[9px] font-bold uppercase px-1.5 py-0.5 rounded"
+                        style={{ background: "color-mix(in srgb, var(--neg) 12%, transparent)", color: "var(--neg)" }}>
+                        Estourado
+                      </span>
+                    )}
+                    {proximo && (
+                      <span className="font-dm text-[9px] font-bold uppercase px-1.5 py-0.5 rounded"
+                        style={{ background: "color-mix(in srgb, var(--alerta) 12%, transparent)", color: "var(--alerta)" }}>
+                        Quase lá
+                      </span>
+                    )}
+                  </div>
+                  <span className="font-mono text-[11px]"
+                    style={{ color: estourado ? "var(--neg)" : "var(--text-secondary)" }}>
+                    R$ {fmtBRL(gasto)} / R$ {fmtBRL(o.limite)}
+                  </span>
+                </div>
+                <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--bg-hover)" }}>
+                  <div className="h-full transition-all"
+                    style={{
+                      width: `${Math.min(100, pct)}%`,
+                      background: estourado ? "var(--neg)" : proximo ? "var(--alerta)" : cor,
+                      opacity: 0.85,
+                    }} />
+                </div>
+                <div className="font-dm text-[10px] mt-0.5" style={{ color: "var(--text-tertiary)" }}>
+                  {pct.toFixed(0)}% usado{estourado && ` · excedido em R$ ${fmtBRL(gasto - o.limite)}`}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Donut({ data }: { data: { label: string; value: number; color: string }[] }) {
+  const total = data.reduce((a, d) => a + d.value, 0);
+  if (total === 0) return null;
+  const size = 170, r = 70, cx = size / 2, cy = size / 2, sw = 22;
+  const C = 2 * Math.PI * r;
+  let offset = 0;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--bg-hover)" strokeWidth={sw} />
+      {data.map((d, i) => {
+        const frac = d.value / total;
+        const len = C * frac;
+        const el = (
+          <circle key={i} cx={cx} cy={cy} r={r} fill="none"
+            stroke={d.color} strokeWidth={sw}
+            strokeDasharray={`${len} ${C - len}`}
+            strokeDashoffset={-offset}
+            transform={`rotate(-90 ${cx} ${cy})`}
+          />
+        );
+        offset += len;
+        return el;
+      })}
+      <text x={cx} y={cy - 4} textAnchor="middle" style={{ fontFamily: "var(--font-fraunces)", fontSize: 18, fill: "var(--text-primary)" }}>
+        R$ {fmtBRL(total)}
+      </text>
+      <text x={cx} y={cy + 14} textAnchor="middle" style={{ fontFamily: "var(--font-dm)", fontSize: 10, fill: "var(--text-tertiary)" }}>
+        Total gastos
+      </text>
+    </svg>
+  );
+}
+
+function FlowBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+  const pct = (value / max) * 100;
+  return (
+    <div>
+      <div className="flex justify-between mb-1.5">
+        <span className="font-dm text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>{label}</span>
+        <span className="font-mono text-xs font-semibold" style={{ color }}>R$ {fmtBRL(value)}</span>
+      </div>
+      <div className="h-3 rounded-full overflow-hidden" style={{ background: "var(--bg-hover)" }}>
+        <div className="h-full rounded-full transition-all"
+          style={{ width: `${pct}%`, background: color, opacity: 0.85 }} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Projeção Tab ──────────────────────────────────
+
+function ProjecaoTab({ data, baseY, baseM }: { data: FinancasData; baseY: number; baseM: number }) {
+  const meses = useMemo(() => {
+    const out: { label: string; saldo: number; gastos: number; entradas: number; items: any[] }[] = [];
+    const activeFixos = data.fixos.filter((f) => f.active !== false);
+    for (let i = 1; i <= 6; i++) {
+      const d = new Date(baseY, baseM + i, 1);
+      const y = d.getFullYear(), m = d.getMonth();
+      const parcTxs = data.txs.filter((t) => {
+        const td = new Date(t.date + "T12:00:00");
+        return td.getFullYear() === y && td.getMonth() === m && t.parc;
+      });
+      const pendAbertas = data.pendencias.filter((p) => {
+        if (p.status !== "aberto") return false;
+        const pd = new Date(p.date_due + "T12:00:00");
+        return pd.getFullYear() === y && pd.getMonth() === m;
+      });
+      const fixoItems = activeFixos.map((f) => ({
+        desc: f.desc, val: f.val, parc: "⟳ fixo",
+        isIn: f.type === "entrada_fixa",
+      }));
+      const pendItems = pendAbertas.map((p) => ({
+        desc: p.desc, val: p.val,
+        parc: p.parc_num && p.parc_total ? `${p.parc_num}/${p.parc_total}` : (p.kind === "pagar" ? "⏳ a pagar" : "⏳ a receber"),
+        isIn: p.kind === "receber",
+      }));
+      const items = [
+        ...parcTxs.map((t) => ({ desc: t.desc, val: t.val, parc: t.parc!, isIn: isEntrada(t.type) })),
+        ...fixoItems,
+        ...pendItems,
+      ];
+      if (items.length === 0) continue;
+      let entradas = 0, gastos = 0;
+      items.forEach((t) => { if (t.isIn) entradas += t.val; else gastos += t.val; });
+      out.push({ label: `${MESES[m]} ${y}`, saldo: entradas - gastos, gastos, entradas, items });
+    }
+    return out;
+  }, [data, baseY, baseM]);
+
+  if (meses.length === 0) {
+    return (
+      <div className="rounded-xl p-8 text-center"
+        style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)" }}>
+        <FiguraVazia />
+        <p className="font-dm text-xs" style={{ color: "var(--text-tertiary)" }}>
+          Nenhuma parcela futura ou item fixo registrado.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <p className="font-dm text-[11px] font-semibold uppercase tracking-wider mb-4"
+        style={{ color: "var(--text-tertiary)" }}>
+        Próximos 6 meses (fixos + parcelas)
+      </p>
+      <div className="space-y-3">
+        {meses.map((m) => (
+          <div key={m.label} className="rounded-xl overflow-hidden"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)" }}>
+            <div className="px-4 py-3 flex justify-between items-center"
+              style={{ borderBottom: "1px solid var(--border-default)" }}>
+              <span className="font-dm text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{m.label}</span>
+              <span className="font-mono text-sm font-semibold"
+                style={{ color: m.saldo >= 0 ? "var(--pos)" : "var(--neg)" }}>
+                {m.saldo >= 0 ? "+ " : "− "}R$ {fmtBRL(Math.abs(m.saldo))}
+              </span>
+            </div>
+            <div className="px-4 py-2">
+              {m.items.map((t: any, i: number) => (
+                <div key={i} className="flex justify-between items-center py-1.5">
+                  <span className="font-dm text-[11px]" style={{ color: "var(--text-tertiary)" }}>
+                    {t.desc}{" "}
+                    <span className="ml-1 font-dm text-[10px] font-semibold"
+                      style={{ color: "var(--orange-500)" }}>
+                      {t.parc}
+                    </span>
+                  </span>
+                  <span className="font-mono text-[11px] font-semibold"
+                    style={{ color: t.isIn ? "var(--pos)" : "var(--neg)" }}>
+                    {t.isIn ? "+ " : "− "}R$ {fmtBRL(t.val)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Transaction Modal ─────────────────────────────
+
+interface TxForm {
+  desc: string; val: number; date: string;
+  type: Transacao["type"]; cat: string; pay: string;
+  parcelado: boolean; parcelas: number; editId: number | null;
+}
+
+function TxModal({
+  mode, editTx, cats, cartoes, onClose, onSubmit,
+}: {
+  mode: "gasto" | "entrada";
+  editTx: Transacao | null;
+  cats: Categoria[];
+  cartoes: string[];
+  onClose: () => void;
+  onSubmit: (f: TxForm) => void;
+}) {
+  const isEdit = !!editTx;
+  const typeOptions = mode === "gasto"
+    ? [{ v: "variavel", l: "Variável" }, { v: "pontual", l: "Pontual" }]
+    : [{ v: "entrada", l: "Entrada pontual" }];
+
+  const [desc, setDesc] = useState(editTx?.desc || "");
+  const [val, setVal] = useState(editTx ? String(editTx.val) : "");
+  const [date, setDate] = useState(editTx?.date || hojeISO());
+  const [type, setType] = useState<Transacao["type"]>(
+    editTx?.type || (mode === "entrada" ? "entrada" : "variavel")
+  );
+  const [cat, setCat] = useState(editTx?.cat || cats[0]?.n || "");
+  const [pay, setPay] = useState(editTx?.pay || "pix");
+  const [parcelado, setParcelado] = useState(false);
+  const [parcelas, setParcelas] = useState(2);
+
+  function handleSubmit() {
+    onSubmit({
+      desc, val: parseFloat(val), date, type, cat, pay,
+      parcelado, parcelas, editId: editTx?.id ?? null,
+    });
+  }
+
+  const gasto = mode === "gasto";
+
+  return (
+    <div className="fixed inset-0 z-[9000] flex items-center justify-center fundo-modal p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-7"
+        style={{ background: "var(--bg-card-elevated)", border: "1px solid var(--border-default)" }}>
+        <h2 className="font-fraunces text-xl mb-5 flex items-center gap-3" style={{ color: "var(--text-primary)" }}>
+          <span className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{
+              background: gasto ? "color-mix(in srgb, var(--neg) 12%, transparent)" : "color-mix(in srgb, var(--pos) 12%, transparent)",
+              color: gasto ? "var(--neg)" : "var(--pos)",
+            }}>
+            {isEdit ? <Pencil size={15} /> : gasto ? <Minus size={15} /> : <Plus size={15} />}
+          </span>
+          {isEdit ? `Editar ${gasto ? "gasto" : "entrada"}` : `${gasto ? "Novo gasto" : "Nova entrada"}`}
+        </h2>
+
+        {!gasto && !isEdit && (
+          <p className="font-dm text-[10px] mb-3 px-3 py-2 rounded-lg"
+            style={{ background: "color-mix(in srgb, var(--pos) 6%, transparent)", color: "var(--text-tertiary)", border: "1px dashed color-mix(in srgb, var(--pos) 25%, transparent)" }}>
+            💡 Para entradas que se repetem todo mês (salário, aluguel recebido), use a aba <strong>Fixos</strong>.
+          </p>
+        )}
+        <Field label="Descrição">
+          <Input value={desc} onChange={setDesc} placeholder={gasto ? "Ex: Almoço, Netflix..." : "Ex: Venda extra, reembolso..."} autoFocus />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Valor (R$)"><Input type="number" value={val} onChange={setVal} placeholder="0,00" /></Field>
+          <Field label="Data"><Input type="date" value={date} onChange={setDate} /></Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Tipo">
+            <Select value={type} onChange={(v) => setType(v as any)}>
+              {typeOptions.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
+            </Select>
+          </Field>
+          <Field label="Categoria">
+            <Select value={cat} onChange={setCat}>
+              {cats.map((c) => <option key={c.n} value={c.n}>{c.n}</option>)}
+            </Select>
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Pagamento"><PaySelect value={pay} onChange={setPay} cartoes={cartoes} /></Field>
+          {!isEdit && (
+            <Field label="Parcelado?">
+              <Select value={parcelado ? "sim" : "nao"} onChange={(v) => setParcelado(v === "sim")}>
+                <option value="nao">Não</option>
+                <option value="sim">Sim</option>
+              </Select>
+            </Field>
+          )}
+        </div>
+        {parcelado && !isEdit && (
+          <Field label="Nº de parcelas">
+            <Input type="number" value={String(parcelas)} onChange={(v) => setParcelas(parseInt(v) || 2)} />
+          </Field>
+        )}
+
+        <div className="flex gap-2 mt-5">
+          <button onClick={onClose}
+            className="flex-1 py-3 rounded-lg font-dm text-xs font-semibold"
+            style={{ background: "var(--bg-hover)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }}>
+            Cancelar
+          </button>
+          <button onClick={handleSubmit}
+            className="flex-1 py-3 rounded-lg font-dm text-xs font-semibold text-white transition-all hover:brightness-110"
+            style={{ background: gasto ? "var(--neg)" : "var(--pos)" }}>
+            {isEdit ? "Salvar alterações" : gasto ? "Adicionar gasto" : "Adicionar entrada"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Form primitives ───────────────────────────────
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5 mb-3">
+      <label className="font-dm text-[10px] font-semibold uppercase tracking-wider"
+        style={{ color: "var(--text-tertiary)" }}>
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function Input({
+  value, onChange, type = "text", placeholder, autoFocus,
+}: {
+  value: string; onChange: (v: string) => void;
+  type?: string; placeholder?: string; autoFocus?: boolean;
+}) {
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      autoFocus={autoFocus}
+      className="px-3 py-2.5 rounded-lg font-dm text-sm outline-none transition-all"
+      style={{
+        background: "var(--bg-input)",
+        color: "var(--text-primary)",
+        border: "1px solid var(--border-default)",
+        colorScheme: "var(--esquema)",
+      }}
+      onFocus={(e) => e.currentTarget.style.borderColor = "var(--orange-500)"}
+      onBlur={(e) => e.currentTarget.style.borderColor = "var(--border-default)"}
+    />
+  );
+}
+
+function Select({
+  value, onChange, children,
+}: { value: string; onChange: (v: string) => void; children: React.ReactNode }) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="px-3 py-2.5 rounded-lg font-dm text-sm outline-none cursor-pointer"
+      style={{
+        background: "var(--bg-input)",
+        color: "var(--text-primary)",
+        border: "1px solid var(--border-default)",
+      }}
+    >
+      {children}
+    </select>
+  );
+}
+
+function PaySelect({
+  value, onChange, cartoes,
+}: { value: string; onChange: (v: string) => void; cartoes: string[] }) {
+  return (
+    <Select
+      value={value}
+      onChange={(v) => {
+        if (v === "__novo") {
+          const n = prompt("Nome do cartão:");
+          if (n && n.trim()) onChange("c:" + n.trim());
+        } else {
+          onChange(v);
+        }
+      }}
+    >
+      <option value="pix">Pix</option>
+      <option value="dinheiro">Dinheiro</option>
+      <option value="debito">Débito</option>
+      {cartoes.map((c) => <option key={c} value={"c:" + c}>Cartão: {c}</option>)}
+      {value.startsWith("c:") && !cartoes.includes(value.slice(2)) && (
+        <option value={value}>Cartão: {value.slice(2)}</option>
+      )}
+      <option value="__novo">+ Novo cartão...</option>
+    </Select>
+  );
+}
+
+// ─── Modal: realizar fixo ─────────────────────────
+
+function RealizarFixoModal({
+  fixo, caixinhas, onClose, onConfirm,
+}: {
+  fixo: FixoItem;
+  caixinhas: Caixinha[];
+  onClose: () => void;
+  onConfirm: (payDate: string, caixinhaId?: number) => void;
+}) {
+  const [payDate, setPayDate] = useState(hojeISO());
+  const [caixinhaId, setCaixinhaId] = useState<string>("");
+  const entrada = fixo.type === "entrada_fixa";
+
+  return (
+    <div className="fixed inset-0 z-[9000] flex items-center justify-center fundo-modal p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="rounded-2xl w-full max-w-sm p-6"
+        style={{ background: "var(--bg-card-elevated)", border: "1px solid var(--border-default)" }}>
+        <h2 className="font-fraunces text-lg mb-1" style={{ color: "var(--text-primary)" }}>
+          {entrada ? "Marcar entrada como recebida" : "Marcar fixo como pago"}
+        </h2>
+        <p className="font-dm text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
+          <strong style={{ color: "var(--text-primary)" }}>{fixo.desc}</strong> — R$ {fmtBRL(fixo.val)}
+        </p>
+        <p className="font-dm text-[11px] mb-3" style={{ color: "var(--text-tertiary)" }}>
+          Cria um lançamento real na data escolhida e marca este fixo como realizado neste mês.
+        </p>
+
+        <div className="flex flex-col gap-1.5 mb-3">
+          <label className="font-dm text-[10px] font-semibold uppercase tracking-wider"
+            style={{ color: "var(--text-tertiary)" }}>
+            Data
+          </label>
+          <input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)}
+            className="px-3 py-2.5 rounded-lg font-dm text-sm outline-none"
+            style={{
+              background: "var(--bg-input)", color: "var(--text-primary)",
+              border: "1px solid var(--border-default)", colorScheme: "var(--esquema)",
+            }}
+          />
+        </div>
+
+        {!entrada && caixinhas.length > 0 && (
+          <div className="flex flex-col gap-1.5 mb-3">
+            <label className="font-dm text-[10px] font-semibold uppercase tracking-wider"
+              style={{ color: "var(--text-tertiary)" }}>
+              Pagar a partir de uma caixinha (opcional)
+            </label>
+            <select value={caixinhaId} onChange={(e) => setCaixinhaId(e.target.value)}
+              className="px-3 py-2.5 rounded-lg font-dm text-sm outline-none cursor-pointer"
+              style={{
+                background: "var(--bg-input)", color: "var(--text-primary)",
+                border: "1px solid var(--border-default)",
+              }}>
+              <option value="">— Nenhuma, sai direto da conta —</option>
+              {caixinhas.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+            </select>
+          </div>
+        )}
+
+        <div className="flex gap-2 mt-4">
+          <button onClick={onClose}
+            className="flex-1 py-2.5 rounded-lg font-dm text-xs font-semibold"
+            style={{ background: "var(--bg-hover)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }}>
+            Cancelar
+          </button>
+          <button onClick={() => onConfirm(payDate, caixinhaId ? parseInt(caixinhaId) : undefined)}
+            className="flex-1 py-2.5 rounded-lg font-dm text-xs font-semibold text-white"
+            style={{ background: "var(--pos)" }}>
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Modal: ajuste manual de saldo ────────────────
+
+function AjusteSaldoModal({
+  saldoAtual, onClose, onConfirm,
+}: {
+  saldoAtual: number;
+  onClose: () => void;
+  onConfirm: (novoSaldo: number) => void;
+}) {
+  const [novo, setNovo] = useState(saldoAtual.toFixed(2));
+  const v = parseFloat(novo);
+  const diff = !isNaN(v) ? +(v - saldoAtual).toFixed(2) : 0;
+
+  return (
+    <div className="fixed inset-0 z-[9000] flex items-center justify-center fundo-modal p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="rounded-2xl w-full max-w-sm p-6"
+        style={{ background: "var(--bg-card-elevated)", border: "1px solid var(--border-default)" }}>
+        <h2 className="font-fraunces text-lg mb-1" style={{ color: "var(--text-primary)" }}>
+          Ajustar saldo da conta
+        </h2>
+        <p className="font-dm text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
+          Se o saldo calculado não bate com o extrato, ajuste aqui. Vamos criar um lançamento de reconciliação na categoria "Ajuste" pra diferença.
+        </p>
+
+        <div className="mb-3 p-3 rounded-lg"
+          style={{ background: "var(--bg-hover)", border: "1px solid var(--border-default)" }}>
+          <p className="font-dm text-[10px] uppercase tracking-wider font-semibold"
+            style={{ color: "var(--text-tertiary)" }}>
+            Saldo calculado agora
+          </p>
+          <p className="font-mono text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
+            R$ {fmtBRL(saldoAtual)}
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-1.5 mb-3">
+          <label className="font-dm text-[10px] font-semibold uppercase tracking-wider"
+            style={{ color: "var(--text-tertiary)" }}>
+            Saldo real da sua conta (R$)
+          </label>
+          <input type="number" step="0.01" value={novo} onChange={(e) => setNovo(e.target.value)}
+            autoFocus
+            className="px-3 py-2.5 rounded-lg font-dm text-sm outline-none"
+            style={{
+              background: "var(--bg-input)", color: "var(--text-primary)",
+              border: "1px solid var(--border-default)", colorScheme: "var(--esquema)",
+            }}
+          />
+        </div>
+
+        {!isNaN(v) && Math.abs(diff) > 0.005 && (
+          <div className="mb-3 p-2 rounded-md font-dm text-[11px]"
+            style={{
+              background: diff > 0 ? "color-mix(in srgb, var(--pos) 8%, transparent)" : "color-mix(in srgb, var(--neg) 8%, transparent)",
+              color: diff > 0 ? "var(--pos)" : "var(--neg)",
+              border: `1px dashed ${diff > 0 ? "color-mix(in srgb, var(--pos) 25%, transparent)" : "color-mix(in srgb, var(--neg) 25%, transparent)"}`,
+            }}>
+            Vamos criar uma {diff > 0 ? "entrada" : "saída"} de R$ {fmtBRL(Math.abs(diff))} como "Ajuste manual de saldo".
+          </div>
+        )}
+
+        <div className="flex gap-2 mt-4">
+          <button onClick={onClose}
+            className="flex-1 py-2.5 rounded-lg font-dm text-xs font-semibold"
+            style={{ background: "var(--bg-hover)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }}>
+            Cancelar
+          </button>
+          <button onClick={() => !isNaN(v) && onConfirm(v)}
+            className="flex-1 py-2.5 rounded-lg font-dm text-xs font-semibold text-white"
+            style={{ background: "var(--orange-500)" }}>
+            Ajustar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

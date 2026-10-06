@@ -1,0 +1,256 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =====================================================================
+   OS PAPÉIS DE COR
+   O código do Finanças pede papéis (--bg-card, --text-primary, --pos…),
+   nunca um hex. Cada app define os mesmos papéis do seu jeito.
+   As texturas (--papel-*) chegam do layout, com o endereço completo.
+===================================================================== */
+
+/* ─── INARI · a floresta da kitsune ─── */
+[data-app="inari"] {
+  --bg-page: #F2EBDC;
+  --bg-card: var(--papel-cartao) #F8F4EA;
+  --bg-card-elevated: var(--papel-cartao) #FCFAF4;
+  --bg-hover: #EBE2CD;
+  --bg-input: #FCFAF4;
+  --border-subtle: rgba(19, 33, 31, .08);
+  --border-default: rgba(19, 33, 31, .15);
+  --border-strong: rgba(19, 33, 31, .24);
+  --border-orange: rgba(30, 58, 47, .35);
+  --text-primary: #13211F;
+  --text-secondary: #2C3A35;
+  --text-tertiary: #56655D;
+  --orange-500: #1E3A2F;          /* acento: a mata */
+  --orange-glow: rgba(30, 58, 47, .10);
+  --sobre-acento: #F2EBDC;
+  --pos: #3F6B36;                 /* musgo fundo */
+  --neg: #962B24;                 /* urushi */
+  --alerta: #A87414;              /* ouro velho */
+  --aviso: #B85A26;               /* kaki */
+  --info: #2E4C7A;                /* ai */
+  --roxo: #6B5A99;                /* fuji */
+  --neutro: #7D8A83;
+  --ouro: #D7A441;
+  --torii: #CF432F;
+  --kitsunebi: #6DB5AE;
+  --modal-backdrop: rgba(19, 33, 31, .55);
+  --esquema: light;
+  --f-titulo: var(--font-fraunces), Georgia, serif;
+  --f-ui: var(--font-barlow), system-ui, sans-serif;
+  --f-num: var(--font-barlow-cond), system-ui, sans-serif;
+  --font-dm: var(--f-ui);
+  --font-fraunces: var(--f-titulo);
+  --raio: 14px;
+}
+
+/* ─── LIVRO-CAIXA · as cartinhas do Clube Entrelinhas ─── */
+[data-app="livro-caixa"] {
+  --bg-page: #EFE2D4;
+  --bg-card: var(--papel-cartao) #FAF5EE;
+  --bg-card-elevated: var(--papel-cartao) #FBF7F1;
+  --bg-hover: #F1E3E6;            /* pérola */
+  --bg-input: #FFFDF9;
+  --border-subtle: rgba(98, 73, 86, .10);
+  --border-default: rgba(98, 73, 86, .20);
+  --border-strong: rgba(98, 73, 86, .32);
+  --border-orange: rgba(110, 31, 46, .35);
+  --text-primary: #30323C;        /* noite */
+  --text-secondary: #4A4150;
+  --text-tertiary: #6E5F6B;
+  --orange-500: #624956;          /* acento: ameixa */
+  --orange-glow: rgba(199, 153, 170, .22);
+  --sobre-acento: #FAF5EE;
+  --pos: #3D6B5F;                 /* jade fundo */
+  --neg: #A3344A;                 /* rosa-vinho */
+  --alerta: #9C7424;              /* ouro velho */
+  --aviso: #B0603C;               /* terracota */
+  --info: #4F6A8A;
+  --roxo: #7D5C8C;
+  --neutro: #8A7F86;
+  --ouro: #D9B36A;
+  --rosa: #C799AA;
+  --jade: #5F857C;
+  --vinho: #6E1F2E;
+  --modal-backdrop: rgba(48, 50, 60, .6);
+  --esquema: light;
+  --f-titulo: var(--font-dmserif), Georgia, serif;
+  --f-ui: var(--font-cormorant), Georgia, serif;
+  --f-num: var(--font-elite), ui-monospace, monospace;
+  --f-rotulo: var(--font-cinzel), Georgia, serif;
+  --f-mao: var(--font-caveat), cursive;
+  --font-dm: var(--f-ui);
+  --font-fraunces: var(--f-titulo);
+  --raio: 6px;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text-primary);
+  background: var(--papel-pagina) var(--bg-page);
+  font-family: var(--f-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* a Cormorant tem o olho da letra pequeno: igualar ao tamanho das outras */
+[data-app="livro-caixa"] .font-dm,
+[data-app="livro-caixa"] body { font-size-adjust: 0.5; font-weight: 600; }
+[data-app="livro-caixa"] .font-dm.font-semibold,
+[data-app="livro-caixa"] .font-dm.font-bold { font-weight: 700; }
+[data-app="livro-caixa"] .font-dm.uppercase {
+  font-family: var(--f-rotulo);
+  font-size-adjust: none;
+  letter-spacing: .08em;
+}
+/* o ajuste é herdado: número e título voltam ao tamanho natural */
+[data-app="livro-caixa"] .font-mono,
+[data-app="livro-caixa"] .font-fraunces { font-size-adjust: none; }
+[data-app="livro-caixa"] .font-mono { letter-spacing: -.01em; font-weight: 400; }
+
+.font-mono { font-variant-numeric: tabular-nums; }
+
+input, select, textarea, button { font-family: inherit; }
+input, select, textarea { color: var(--text-primary); }
+::placeholder { color: var(--text-tertiary); opacity: .8; }
+:focus-visible { outline: 2px solid var(--orange-500); outline-offset: 2px; }
+
+.fundo-modal { background: var(--modal-backdrop); backdrop-filter: blur(3px); }
+
+.btn-soft {
+  padding: 7px 12px;
+  border-radius: 10px;
+  font-family: var(--f-ui);
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
+  transition: all .15s;
+  cursor: pointer;
+}
+.btn-soft:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-strong); }
+
+/* ─── a faixa do alto ─── */
+.faixa {
+  position: relative;
+  color: #EEEAE0;
+  background: var(--papel-noite) #13211F;
+}
+[data-app="livro-caixa"] .faixa { background: var(--papel-noite) #30323C; color: #F1E3E6; }
+
+/* céu: pontinhos de estrela, tom sobre tom */
+.ceu {
+  background-image:
+    radial-gradient(1.4px 1.4px at 12% 22%, rgb(238 234 224 / .6) 50%, transparent 52%),
+    radial-gradient(1px 1px at 27% 64%, rgb(238 234 224 / .45) 50%, transparent 52%),
+    radial-gradient(1.6px 1.6px at 46% 16%, rgb(238 234 224 / .55) 50%, transparent 52%),
+    radial-gradient(1px 1px at 58% 72%, rgb(238 234 224 / .4) 50%, transparent 52%),
+    radial-gradient(1.3px 1.3px at 71% 30%, rgb(238 234 224 / .5) 50%, transparent 52%),
+    radial-gradient(1px 1px at 84% 58%, rgb(238 234 224 / .45) 50%, transparent 52%),
+    radial-gradient(1.5px 1.5px at 93% 18%, rgb(238 234 224 / .55) 50%, transparent 52%);
+}
+
+/* fogo-de-raposa (kitsunebi): chamas que respiram */
+.kitsunebi {
+  position: absolute;
+  width: 10px; height: 14px;
+  border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+  background: radial-gradient(circle at 50% 70%, #E6FFFB 0 18%, #6DB5AE 45%, rgb(109 181 174 / 0) 72%);
+  filter: blur(.3px) drop-shadow(0 0 6px rgb(109 181 174 / .9));
+  animation: respira 3.6s ease-in-out infinite;
+}
+@keyframes respira {
+  0%, 100% { transform: translateY(0) scale(1); opacity: .85; }
+  50% { transform: translateY(-5px) scale(1.12); opacity: 1; }
+}
+
+/* morro ondulado na passagem da faixa para o papel (Inari) */
+.morro {
+  position: absolute; left: 0; right: 0; bottom: -1px; height: 22px;
+  background: var(--papel-pagina) var(--bg-page);
+  -webkit-mask: radial-gradient(28px 22px at 50% 100%, #000 98%, transparent 100%) 0 0 / 56px 22px repeat-x;
+          mask: radial-gradient(28px 22px at 50% 100%, #000 98%, transparent 100%) 0 0 / 56px 22px repeat-x;
+}
+
+/* borda de correio aéreo (Livro-caixa) */
+.correio {
+  height: 9px;
+  background: repeating-linear-gradient(-45deg, var(--rosa) 0 12px, var(--bg-page) 12px 18px, var(--jade) 18px 30px, var(--bg-page) 30px 36px);
+}
+
+/* ─── abas ─── */
+.abas { position: relative; }
+.aba {
+  flex: 1 0 auto;
+  min-width: 92px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-family: var(--f-ui);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  transition: background .15s, color .15s, transform .15s;
+  white-space: nowrap;
+}
+.aba:hover { color: var(--text-primary); }
+
+/* Inari: a aba ativa ganha a viga do torii por cima */
+[data-app="inari"] .aba[aria-selected="true"] {
+  color: var(--sobre-acento);
+  background: var(--orange-500);
+  box-shadow: inset 0 3px 0 var(--torii);
+}
+
+/* Livro-caixa: as abas são selos; a ativa leva o carimbo rosa, torta */
+[data-app="livro-caixa"] .aba {
+  border-radius: 3px;
+  font-family: var(--f-rotulo);
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+[data-app="livro-caixa"] .aba[aria-selected="true"] {
+  color: #30323C;
+  background: var(--papel-rosa) var(--rosa);
+  transform: rotate(-1.5deg);
+  outline: 1.5px dashed rgba(48, 50, 60, .45);
+  outline-offset: -5px;
+  box-shadow: 0 2px 0 rgba(98, 73, 86, .18);
+}
+
+/* a figura que espia por trás da barra de abas */
+.espiando {
+  position: absolute;
+  right: 14px;
+  bottom: calc(100% - 14px);
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 2px 2px rgb(0 0 0 / .08));
+  animation: espia .45s cubic-bezier(.2, .9, .3, 1.3);
+}
+@keyframes espia { from { transform: translateY(28px); opacity: 0; } to { transform: none; opacity: 1; } }
+.barra-abas { position: relative; z-index: 1; }
+
+/* cartinha (Livro-caixa): moldura dupla nos cartões do resumo */
+[data-app="livro-caixa"] .cartinha {
+  box-shadow: inset 0 0 0 4px #FAF5EE, inset 0 0 0 5px rgba(98, 73, 86, .28), 0 1px 0 rgba(98, 73, 86, .08);
+}
+[data-app="inari"] .cartinha {
+  box-shadow: 0 1px 0 rgba(19, 33, 31, .05), 0 6px 18px -12px rgba(19, 33, 31, .35);
+}
+
+.figura-fluida { max-width: 100%; height: auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  .kitsunebi, .espiando { animation: none; }
+}
