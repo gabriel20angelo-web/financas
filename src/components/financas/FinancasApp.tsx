@@ -673,14 +673,14 @@ function FinancasInner() {
       <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={importJSON} />
 
       {/* Banner de saldos reais (global, não mensal) */}
-      <div className="rounded-xl p-4 mb-3 grid grid-cols-3 gap-4 cartinha"
+      <div className="rounded-xl p-4 mb-3 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 cartinha"
         style={{
           background: "var(--bg-card)",
           border: "1px solid var(--border-default)",
         }}>
-        <div>
+        <div className="col-span-2 sm:col-span-1 pb-3 sm:pb-0 border-b sm:border-b-0" style={{ borderColor: "var(--border-subtle)" }}>
           <div className="flex items-center justify-between gap-2 mb-1">
-            <p className="font-dm text-[9px] uppercase tracking-wider font-semibold"
+            <p className="font-dm text-[10px] sm:text-[9px] uppercase tracking-wider font-semibold"
               style={{ color: "var(--text-tertiary)" }}>
               Saldo real na conta
             </p>
@@ -695,14 +695,14 @@ function FinancasInner() {
               Ajustar
             </button>
           </div>
-          <p className="font-fraunces text-lg sm:text-xl whitespace-nowrap" style={{ color: saldoRealVal >= 0 ? "var(--text-primary)" : "var(--neg)" }}>
+          <p className="font-fraunces text-[26px] leading-tight sm:text-xl whitespace-nowrap" style={{ color: saldoRealVal >= 0 ? "var(--text-primary)" : "var(--neg)" }}>
             R$ {fmtBRL(Math.abs(saldoRealVal))}
           </p>
           <p className="font-dm text-[9px] mt-0.5" style={{ color: "var(--text-tertiary)" }}>
             Lançado até hoje
           </p>
         </div>
-        <div style={{ borderLeft: "1px solid var(--border-subtle)", paddingLeft: 16 }}>
+        <div className="sm:border-l sm:pl-4" style={{ borderColor: "var(--border-subtle)" }}>
           <p className="font-dm text-[9px] uppercase tracking-wider font-semibold mb-1"
             style={{ color: "var(--text-tertiary)" }}>
             Livre
@@ -714,7 +714,7 @@ function FinancasInner() {
             Fora das caixinhas
           </p>
         </div>
-        <div style={{ borderLeft: "1px solid var(--border-subtle)", paddingLeft: 16 }}>
+        <div className="border-l pl-4" style={{ borderColor: "var(--border-subtle)" }}>
           <p className="font-dm text-[9px] uppercase tracking-wider font-semibold mb-1"
             style={{ color: "var(--text-tertiary)" }}>
             Reservado
@@ -759,7 +759,7 @@ function FinancasInner() {
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-1.5 max-w-[40%]">
+          <div className="hidden sm:flex flex-wrap gap-1.5 max-w-[40%]">
             {data.cartoes.filter((c) => c.ativo).map((c) => {
               const credito = Math.max(0, saldoPositivoCartao(c));
               const divida = dividaCartaoMes(c, data.txs, data.fixos, mY, mM);
@@ -811,8 +811,8 @@ function FinancasInner() {
         )}
       </div>
 
-      {/* Action buttons */}
-      <div className="flex flex-col md:flex-row gap-3 mb-6">
+      {/* Action buttons (no celular, o + da barra de baixo faz isso) */}
+      <div className="hidden md:flex md:flex-row gap-3 mb-6">
         <button
           onClick={() => setModal({ mode: "gasto", editId: null })}
           className="flex-1 py-3.5 rounded-xl font-dm font-semibold text-sm flex items-center justify-center gap-2 transition-all hover:brightness-110"
@@ -829,7 +829,8 @@ function FinancasInner() {
         </button>
       </div>
 
-      <Abas abas={TABS} ativa={tab} onTrocar={(id) => setTab(id as TabId)} />
+      <Abas abas={TABS} ativa={tab} onTrocar={(id) => setTab(id as TabId)}
+        onNovo={(mode) => setModal({ mode, editId: null })} />
 
       {/* Alert banner */}
       {temAlerta && (
@@ -1012,13 +1013,13 @@ function SummaryCard({
 }: { label: string; value: string; tone: "pos" | "neg" | "neutral"; sub: string }) {
   const color = tone === "pos" ? "var(--pos)" : tone === "neg" ? "var(--neg)" : "var(--text-primary)";
   return (
-    <div className="rounded-xl p-5 relative overflow-hidden cartinha"
+    <div className="rounded-xl p-4 sm:p-5 relative overflow-hidden cartinha"
       style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)" }}>
-      <p className="font-dm text-[10px] uppercase tracking-wider font-semibold mb-2"
+      <p className="font-dm text-[10px] uppercase tracking-wider font-semibold mb-1.5 sm:mb-2"
         style={{ color: "var(--text-tertiary)" }}>
         {label}
       </p>
-      <p className="font-fraunces text-2xl" style={{ color }}>
+      <p className="font-fraunces text-[19px] sm:text-2xl leading-tight" style={{ color }}>
         {value}
       </p>
       <p className="font-dm text-[11px] mt-1" style={{ color: "var(--text-tertiary)" }}>{sub}</p>
@@ -1057,7 +1058,7 @@ function LancamentosTab({
         </span>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm tabela-celular tc-lanc">
           <thead>
             <tr style={{ borderBottom: "1px solid var(--border-default)" }}>
               <Th>Data</Th><Th>Descrição</Th><Th>Tipo</Th><Th>Categoria</Th>
@@ -1331,7 +1332,7 @@ function FixosTab({
             </span>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm tabela-celular tc-fixos">
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border-default)" }}>
                   <Th>Descrição</Th><Th>Tipo</Th><Th>Categoria</Th>

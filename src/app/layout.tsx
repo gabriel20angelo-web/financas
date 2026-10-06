@@ -20,6 +20,7 @@ export const viewport: Viewport = {
   themeColor: TEMA.corDoNavegador,
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
 };
 
 const papel = (nome: string) => `url("${asset(`${APP}/papel/${nome}.webp`)}")`;

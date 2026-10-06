@@ -268,7 +268,7 @@ function ListaPendencias({
     <div className="rounded-xl overflow-hidden"
       style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)" }}>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm tabela-celular tc-pend">
           <thead>
             <tr style={{ borderBottom: "1px solid var(--border-default)" }}>
               <Th>Tipo</Th><Th>Descrição</Th><Th>Categoria</Th>
