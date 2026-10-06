@@ -25,18 +25,14 @@ export const viewport: Viewport = {
 const papel = (nome: string) => `url("${asset(`${APP}/papel/${nome}.webp`)}")`;
 
 // As texturas vão como variáveis com o endereço completo, para o url() valer
-// igual em qualquer lugar. Cada modo escolhe as suas no globals.css.
+// igual em qualquer lugar. O modo escuro não usa papel (globals.css: grão).
 const papeis: Record<string, string> =
   APP === "snowbobao"
     ? {
         "--papel-pagina-claro": papel("pergaminho"), "--papel-cartao-claro": papel("marfim"),
-        "--papel-pagina-escuro": papel("breu"), "--papel-cartao-escuro": papel("couro"),
-        "--papel-noite": papel("vela"),
       }
     : {
         "--papel-pagina-claro": papel("washi"), "--papel-cartao-claro": papel("cartao"),
-        "--papel-pagina-escuro": papel("washi-noite"), "--papel-cartao-escuro": papel("cartao-noite"),
-        "--papel-noite": papel("noite"),
       };
 
 // Antes de pintar: o modo que a pessoa escolheu, ou o do aparelho.

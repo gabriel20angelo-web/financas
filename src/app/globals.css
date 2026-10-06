@@ -7,7 +7,7 @@
    O código do Finanças pede papéis (--bg-card, --text-primary, --pos…),
    nunca um hex. Cada app define os mesmos papéis do seu jeito, no modo
    claro e no escuro (data-tema no <html>, posto antes de pintar).
-   As texturas (--papel-*-claro/-escuro) chegam do layout, com o endereço
+   As texturas do claro (--papel-*-claro) chegam do layout, com o endereço
    completo; aqui cada modo escolhe as suas.
 ===================================================================== */
 
@@ -54,8 +54,9 @@
 
 /* Inari à noite: a mata escura, e o acento vira a lanterna de ouro */
 [data-app="inari"][data-tema="escuro"] {
-  --papel-pagina: var(--papel-pagina-escuro);
-  --papel-cartao: var(--papel-cartao-escuro);
+  --papel-pagina: none;           /* no escuro, sem papel: cor lisa + grão de filme */
+  --papel-cartao: none;
+  --grao: .3;
   --bg-page: #0E1715;
   --bg-card: var(--papel-cartao) #16211E;
   --bg-card-elevated: var(--papel-cartao) #1B2824;
@@ -132,8 +133,9 @@
 
 /* Snowbobão à luz de vela */
 [data-app="snowbobao"][data-tema="escuro"] {
-  --papel-pagina: var(--papel-pagina-escuro);
-  --papel-cartao: var(--papel-cartao-escuro);
+  --papel-pagina: none;           /* no escuro, sem papel: cor lisa + grão de filme */
+  --papel-cartao: none;
+  --grao: .3;
   --bg-page: #0E0C0B;
   --bg-card: var(--papel-cartao) #191312;
   --bg-card-elevated: var(--papel-cartao) #211A17;
@@ -167,7 +169,7 @@
   --esquema: dark;
 }
 
-html { -webkit-text-size-adjust: 100%; color-scheme: var(--esquema); --mistura-cor: 80%; }
+html { -webkit-text-size-adjust: 100%; color-scheme: var(--esquema); --mistura-cor: 80%; --grao: 0; }
 html[data-tema="escuro"] { --mistura-cor: 55%; }
 
 body {
@@ -178,6 +180,28 @@ body {
   font-family: var(--f-ui);
   -webkit-font-smoothing: antialiased;
 }
+
+/* grão de filme: pontinhos claros finos, desenhados pelo navegador (papel
+   escuro em imagem comprimida vira blocos, «parece Minecraft»). No escuro vai
+   por cima da página inteira; na faixa, nos dois modos. */
+html { --grao-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1' numOctaves='1' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 0.93  0 0 0 0 0.84  2.6 0 0 0 -1.45'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E"); }
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  pointer-events: none;
+  opacity: var(--grao);
+  background-image: var(--grao-img);
+}
+/* a luz que cai do alto no escuro: vela (Snowbobão) e lua (Inari) */
+[data-tema="escuro"] body {
+  background:
+    radial-gradient(90% 55% at 50% 0%, var(--luz-do-alto), transparent 70%) fixed,
+    var(--bg-page);
+}
+[data-app="snowbobao"] { --luz-do-alto: rgba(224, 168, 103, .07); }
+[data-app="inari"] { --luz-do-alto: rgba(109, 181, 174, .06); }
 
 .font-mono { font-variant-numeric: tabular-nums lining-nums; }
 
@@ -220,15 +244,26 @@ input, select, textarea { color: var(--text-primary); }
 .faixa {
   position: relative;
   color: #EEEAE0;
-  background: var(--papel-noite) #13211F;
+  background:
+    radial-gradient(70% 120% at 62% 0%, rgba(109, 181, 174, .10), transparent 65%),
+    #13211F;
 }
-[data-app="inari"][data-tema="escuro"] .faixa { background: var(--papel-noite) #101B19; }
+[data-tema="escuro"][data-app="inari"] .faixa { background-color: #101B19; }
+.faixa::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .3;
+  background-image: var(--grao-img);
+}
 [data-app="snowbobao"] .faixa {
   color: #F2E9DF;
   background:
     radial-gradient(55% 95% at 88% 100%, rgba(224, 168, 103, .20), transparent 72%),
     radial-gradient(35% 70% at 62% 100%, rgba(210, 118, 58, .12), transparent 72%),
-    var(--papel-noite) #15100E;
+    radial-gradient(80% 90% at 20% 0%, rgba(138, 47, 59, .16), transparent 70%),
+    #15100E;
 }
 
 /* céu: pontinhos de estrela, tom sobre tom (por cima do papel da faixa) */
