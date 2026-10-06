@@ -1,5 +1,7 @@
 -- Finanças pessoais dos apps Inari (raposa) e Snowbobão (as contas da Iara Loren).
 -- Uma linha por chave de dados (fin:txs, fin:cats…) por app e por pessoa.
+-- ⛔ Rodar financas_contas.sql DEPOIS deste: ele troca as regras abaixo por
+-- regras que também exigem que a linha seja do app da conta.
 create table if not exists public.financas_kv (
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
   app text not null check (app in ('inari', 'snowbobao')),
