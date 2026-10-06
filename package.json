@@ -8,7 +8,8 @@
     "build:inari": "cross-env NEXT_PUBLIC_APP=inari NEXT_DIST=.next-inari next build",
     "build:livro-caixa": "cross-env NEXT_PUBLIC_APP=livro-caixa NEXT_DIST=.next-livro-caixa next build",
     "build": "node scripts/build-tudo.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "publicar": "node scripts/publicar.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.99.0",

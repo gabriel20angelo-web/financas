@@ -25,4 +25,4 @@ da Raposa e aparecem iguais no celular e no computador.
     npm run dev:livro-caixa    # http://localhost:3022
     npm run build              # gera site/ com os dois e a página de entrada
 
-O push na `main` publica no GitHub Pages.
+Publicar: `npm run publicar` (gera site/ e envia para o ramo gh-pages, que o GitHub Pages serve).
