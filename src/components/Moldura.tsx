@@ -26,6 +26,17 @@ export const useConta = () => useContext(ContaCtx);
 
 const DISPENSOU_ANTIGOS = `${APP}:antigos-dispensado`;
 
+/**
+ * A conta é deste app? Cada login abre um app só (tabela financas_contas):
+ * o da Iara não abre o Inari, o do Ângelo não abre o Snowbobão. Sem internet
+ * não dá para saber; aí deixa passar, porque o banco recusa do mesmo jeito.
+ */
+async function contaDesteApp(): Promise<boolean> {
+  const { data, error } = await supabase.from("financas_contas").select("app").maybeSingle();
+  if (error) return true;
+  return data?.app === APP;
+}
+
 function comPrazo<T>(p: Promise<T>, ms: number, reserva: T): Promise<T> {
   return Promise.race([p, new Promise<T>((r) => setTimeout(() => r(reserva), ms))]);
 }
@@ -52,7 +63,9 @@ export default function Moldura({ children }: { children: React.ReactNode }) {
       try {
         const { data } = await comPrazo(supabase.auth.getSession(), 5000, { data: { session: null } } as Awaited<ReturnType<typeof supabase.auth.getSession>>);
         const u = data.session?.user;
-        if (u) {
+        if (u && !(await comPrazo(contaDesteApp(), 5000, true))) {
+          await supabase.auth.signOut({ scope: "local" });
+        } else if (u) {
           definirUsuario(u.id);
           setEmail(nomeDaConta(u.email));
           await puxar();
@@ -92,6 +105,10 @@ export default function Moldura({ children }: { children: React.ReactNode }) {
       if (error?.message?.toLowerCase().includes("invalid")) return "Nome ou senha não conferem.";
       return "Não consegui entrar agora. Confira a internet e tente de novo.";
     }
+    if (!(await contaDesteApp())) {
+      await supabase.auth.signOut({ scope: "local" });
+      return `Esse login não abre o ${TEMA.nome}.`;
+    }
     definirUsuario(data.user.id);
     setEmail(nomeDaConta(data.user.email));
     await puxar();
@@ -102,7 +119,7 @@ export default function Moldura({ children }: { children: React.ReactNode }) {
 
   async function sair() {
     if (!confirm("Sair da conta? Os dados continuam neste aparelho; só param de ir para a nuvem.")) return;
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
     definirUsuario(null);
     setEmail(null);
   }
