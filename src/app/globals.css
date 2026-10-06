@@ -38,7 +38,7 @@
   --kitsunebi: #6DB5AE;
   --modal-backdrop: rgba(19, 33, 31, .55);
   --esquema: light;
-  --f-titulo: var(--font-fraunces), Georgia, serif;
+  --f-titulo: var(--font-fraunces-nf), Georgia, serif;
   --f-ui: var(--font-barlow), system-ui, sans-serif;
   --f-num: var(--font-barlow-cond), system-ui, sans-serif;
   --font-dm: var(--f-ui);

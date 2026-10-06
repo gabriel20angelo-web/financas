@@ -5,7 +5,7 @@ import {
 import { APP } from "@/lib/tema";
 
 // Inari: as fontes do site da Raposa Analítica.
-const fraunces = Fraunces({ subsets: ["latin"], axes: ["SOFT", "WONK"], style: ["normal", "italic"], variable: "--font-fraunces", display: "swap", preload: false });
+const fraunces = Fraunces({ subsets: ["latin"], axes: ["SOFT", "WONK"], style: ["normal", "italic"], variable: "--font-fraunces-nf", display: "swap", preload: false });
 const barlow = Barlow({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-barlow", display: "swap", preload: false });
 const barlowCond = Barlow_Semi_Condensed({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-barlow-cond", display: "swap", preload: false });
 
