@@ -77,7 +77,6 @@ const INARI: Tema = {
   subtitulo: "as contas da raposa",
   marca: "as contas da raposa",
   corDoNavegador: "#13211F",
-  notaDaConta: "É a mesma conta do painel do site da Raposa Analítica.",
   trazAntigos: true,
   figurasDaAba: {
     lancamentos: f("inari/fig/raposa-anotando.webp", "Raposa de óculos anotando num caderno", 96),

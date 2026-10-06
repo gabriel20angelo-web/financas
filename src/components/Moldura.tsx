@@ -9,6 +9,7 @@ import {
 } from "@/lib/sync";
 import { CHAVES_FINANCAS, initFinancasSync } from "@/lib/financas-data";
 import { APP, TEMA } from "@/lib/tema";
+import { emailDoLogin, nomeDaConta, senhaDoBanco } from "@/lib/conta";
 
 // ─── a conta (entrar, sair, sincronizar) ───────────────────────
 
@@ -52,7 +53,7 @@ export default function Moldura({ children }: { children: React.ReactNode }) {
         const u = data.session?.user;
         if (u) {
           definirUsuario(u.id);
-          setEmail(u.email ?? null);
+          setEmail(nomeDaConta(u.email));
           await puxar();
         }
       } catch {}
@@ -85,13 +86,13 @@ export default function Moldura({ children }: { children: React.ReactNode }) {
   }, [puxar]);
 
   async function entrar(emailDigitado: string, senha: string): Promise<string | null> {
-    const { data, error } = await supabase.auth.signInWithPassword({ email: emailDigitado.trim(), password: senha });
+    const { data, error } = await supabase.auth.signInWithPassword({ email: emailDoLogin(emailDigitado), password: senhaDoBanco(senha) });
     if (error || !data.user) {
-      if (error?.message?.toLowerCase().includes("invalid")) return "E-mail ou senha não conferem.";
+      if (error?.message?.toLowerCase().includes("invalid")) return "Nome ou senha não conferem.";
       return "Não consegui entrar agora. Confira a internet e tente de novo.";
     }
     definirUsuario(data.user.id);
-    setEmail(data.user.email ?? null);
+    setEmail(nomeDaConta(data.user.email));
     await puxar();
     setVersao((v) => v + 1);
     setEntrando(false);
@@ -189,11 +190,12 @@ function ModalEntrar({ onClose, onEntrar }: {
         </button>
         <h2 className="font-fraunces text-2xl text-center mb-1" style={{ color: "var(--text-primary)" }}>{TEMA.textos.entrarTitulo}</h2>
         <p className="font-dm text-sm text-center mb-5" style={{ color: "var(--text-secondary)" }}>{TEMA.textos.entrarSub}</p>
-        <label className="block font-dm text-xs font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>E-mail</label>
-        <input type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)}
+        <label className="block font-dm text-xs font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>Nome</label>
+        <input type="text" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} required
+          value={email} onChange={(e) => setEmail(e.target.value)}
           className={`${campo} mb-3`} style={estiloCampo} />
         <label className="block font-dm text-xs font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>Senha</label>
-        <input type="password" autoComplete="current-password" required value={senha} onChange={(e) => setSenha(e.target.value)}
+        <input type="password" inputMode="numeric" autoComplete="current-password" required value={senha} onChange={(e) => setSenha(e.target.value)}
           className={`${campo} mb-4`} style={estiloCampo} />
         {erro && <p className="font-dm text-sm mb-3" style={{ color: "var(--neg)" }}>{erro}</p>}
         <button type="submit" disabled={indo} className="w-full py-3 rounded-xl font-dm text-sm font-semibold transition-all disabled:opacity-60"
