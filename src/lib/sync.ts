@@ -50,18 +50,64 @@ function lerLocal(chave: string): unknown | undefined {
   }
 }
 
-async function enviar(chave: string, valor: unknown, ts: number) {
-  if (!usuario) return;
-  const { error } = await supabase.from("financas_kv").upsert({
-    user_id: usuario,
-    app: APP,
-    chave,
-    valor,
-    atualizado_em: new Date(ts).toISOString(),
-  });
-  if (error && process.env.NODE_ENV === "development") {
-    console.warn("[sync] envio falhou", chave, error.message);
-  }
+const pendentes = new Set<Promise<boolean>>();
+
+/** Manda uma chave para o banco. Devolve se subiu. */
+function enviar(chave: string, valor: unknown, ts: number): Promise<boolean> {
+  if (!usuario) return Promise.resolve(false);
+  const uid = usuario;
+  const p = (async () => {
+    try {
+      const { error } = await supabase.from("financas_kv").upsert({
+        user_id: uid,
+        app: APP,
+        chave,
+        valor,
+        atualizado_em: new Date(ts).toISOString(),
+      });
+      if (error && process.env.NODE_ENV === "development") console.warn("[sync] envio falhou", chave, error.message);
+      return !error;
+    } catch {
+      return false;
+    }
+  })();
+  pendentes.add(p);
+  void p.finally(() => pendentes.delete(p));
+  return p;
+}
+
+/** Espera os envios em andamento. Devolve se todos subiram. */
+export async function esperarEnvios(): Promise<boolean> {
+  const r = await Promise.all(Array.from(pendentes));
+  return r.every(Boolean);
+}
+
+// ─── Os dados do aparelho são de uma conta só ─────────────────
+// Sem login o app não mostra nada (Moldura). Ao sair, os dados deste app saem
+// do aparelho; e se outra conta entrar num aparelho que tem dados de alguém,
+// eles somem antes de sincronizar, para nunca subir para a conta errada.
+
+const DONO = `${NS}__dono`;
+
+/** Apaga deste aparelho tudo o que é deste app (dados e carimbos de hora). */
+export function limparDadosLocais() {
+  try {
+    const fora: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(NS)) fora.push(k);
+    }
+    fora.forEach((k) => localStorage.removeItem(k));
+  } catch {}
+}
+
+/** Marca os dados deste aparelho como da conta que entrou (limpa se eram de outra). */
+export function assumirDadosLocais(uid: string) {
+  try {
+    const dono = localStorage.getItem(DONO);
+    if (dono && dono !== uid) limparDadosLocais();
+    localStorage.setItem(DONO, uid);
+  } catch {}
 }
 
 /** Puxa do banco as chaves pedidas e acerta com o aparelho. Devolve se algo mudou aqui. */

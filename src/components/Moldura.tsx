@@ -1,11 +1,12 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { X } from "lucide-react";
 import Figura from "@/components/Figura";
+import ModoTema from "@/components/ModoTema";
 import { supabase } from "@/lib/supabase";
 import {
   definirUsuario, usuarioAtual, reenviarTudo, temDadosLocais, dadosAntigos, importarAntigos,
+  esperarEnvios, limparDadosLocais, assumirDadosLocais,
 } from "@/lib/sync";
 import { CHAVES_FINANCAS, initFinancasSync } from "@/lib/financas-data";
 import { APP, TEMA } from "@/lib/tema";
@@ -13,6 +14,9 @@ import { emailDoLogin, nomeDaConta, senhaDoBanco } from "@/lib/conta";
 import { fofo } from "@/components/Fofos";
 
 // ─── a conta (entrar, sair, sincronizar) ───────────────────────
+// ⛔ Sem login, o app não mostra NADA da conta: só a tela de entrar. Os dados
+// só são lidos depois que a conta entra (e é deste app), e saem do aparelho
+// quando ela sai.
 
 interface Conta {
   email: string | null;
@@ -46,7 +50,6 @@ export default function Moldura({ children }: { children: React.ReactNode }) {
   const [versao, setVersao] = useState(0);
   const [email, setEmail] = useState<string | null>(null);
   const [sincronizando, setSincronizando] = useState(false);
-  const [entrando, setEntrando] = useState(false);
   const [antigos, setAntigos] = useState<{ qtdLancamentos: number; chaves: string[] } | null>(null);
 
   const puxar = useCallback(async () => {
@@ -66,15 +69,16 @@ export default function Moldura({ children }: { children: React.ReactNode }) {
         if (u && !(await comPrazo(contaDesteApp(), 5000, true))) {
           await supabase.auth.signOut({ scope: "local" });
         } else if (u) {
+          assumirDadosLocais(u.id);
           definirUsuario(u.id);
-          setEmail(nomeDaConta(u.email));
           await puxar();
+          setEmail(nomeDaConta(u.email));
         }
       } catch {}
       if (!vivo) return;
       let dispensou = false;
       try { dispensou = localStorage.getItem(DISPENSOU_ANTIGOS) === "1"; } catch {}
-      if (TEMA.trazAntigos && !dispensou && !temDadosLocais(CHAVES_FINANCAS)) setAntigos(dadosAntigos(CHAVES_FINANCAS));
+      if (TEMA.trazAntigos && usuarioAtual() && !dispensou && !temDadosLocais(CHAVES_FINANCAS)) setAntigos(dadosAntigos(CHAVES_FINANCAS));
       setPronto(true);
     })();
 
@@ -109,18 +113,24 @@ export default function Moldura({ children }: { children: React.ReactNode }) {
       await supabase.auth.signOut({ scope: "local" });
       return `Esse login não abre o ${TEMA.nome}.`;
     }
+    assumirDadosLocais(data.user.id);
     definirUsuario(data.user.id);
-    setEmail(nomeDaConta(data.user.email));
     await puxar();
     setVersao((v) => v + 1);
-    setEntrando(false);
+    setEmail(nomeDaConta(data.user.email));
     return null;
   }
 
   async function sair() {
-    if (!confirm("Sair da conta? Os dados continuam neste aparelho; só param de ir para a nuvem.")) return;
+    if (!confirm("Sair da conta? As contas saem deste aparelho e continuam guardadas no login.")) return;
+    // antes de apagar daqui, garante que tudo subiu
+    await comPrazo(reenviarTudo(), 8000, false);
+    const subiu = await comPrazo(esperarEnvios(), 8000, false);
+    if (!subiu && !confirm("Não consegui confirmar que tudo foi para a nuvem (sem internet?). Sair mesmo assim? O que não subiu se perde.")) return;
     await supabase.auth.signOut({ scope: "local" });
+    limparDadosLocais();
     definirUsuario(null);
+    setAntigos(null);
     setEmail(null);
   }
 
@@ -145,8 +155,10 @@ export default function Moldura({ children }: { children: React.ReactNode }) {
     );
   }
 
+  if (!email) return <TelaEntrar onEntrar={entrar} />;
+
   return (
-    <ContaCtx.Provider value={{ email, sincronizando, abrirEntrar: () => setEntrando(true), sair }}>
+    <ContaCtx.Provider value={{ email, sincronizando, abrirEntrar: () => {}, sair }}>
       <main className="max-w-6xl mx-auto px-3 sm:px-5 md:px-8 pb-28 overflow-x-clip">
         {antigos && (
           <div className="mt-4 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 cartinha"
@@ -177,19 +189,17 @@ export default function Moldura({ children }: { children: React.ReactNode }) {
           </p>
         </footer>
       </main>
-      {entrando && <ModalEntrar onClose={() => setEntrando(false)} onEntrar={entrar} />}
     </ContaCtx.Provider>
   );
 }
 
-function ModalEntrar({ onClose, onEntrar }: {
-  onClose: () => void;
-  onEntrar: (email: string, senha: string) => Promise<string | null>;
-}) {
+/** A única coisa que aparece sem login: o nome do app e o formulário de entrar. */
+function TelaEntrar({ onEntrar }: { onEntrar: (email: string, senha: string) => Promise<string | null> }) {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [indo, setIndo] = useState(false);
+  const snow = APP === "snowbobao";
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -198,21 +208,31 @@ function ModalEntrar({ onClose, onEntrar }: {
     setIndo(false);
   }
 
-  const campo = "w-full px-3.5 py-2.5 rounded-lg font-dm text-sm outline-none";
+  const campo = "w-full px-3.5 py-3 rounded-lg font-dm text-base outline-none";
   const estiloCampo = { background: "var(--bg-input)", border: "1px solid var(--border-default)", color: "var(--text-primary)" };
 
   return (
-    <div className="fixed inset-0 z-[9000] flex items-center justify-center fundo-modal p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <form onSubmit={enviar} className="relative rounded-2xl w-full max-w-sm p-7 pt-24 cartinha"
+    <main className="tela-entrar min-h-screen flex flex-col items-center justify-center px-5 py-10">
+      <div className="absolute right-4 top-4" style={{ marginTop: "env(safe-area-inset-top)" }}>
+        <ModoTema className="btn-soft" />
+      </div>
+      <p className="font-dm uppercase text-[11px] tracking-[.24em] text-center" style={{ color: "var(--orange-500)" }}>
+        {TEMA.marca}
+      </p>
+      <h1 className="font-fraunces leading-none text-center mt-1"
+        style={{
+          fontSize: "clamp(46px, 13vw, 68px)", color: "var(--text-primary)", fontSizeAdjust: "none",
+          fontWeight: snow ? 500 : undefined, fontVariationSettings: snow ? undefined : '"SOFT" 100, "WONK" 1',
+        }}>
+        {TEMA.titulo[0]}<em style={{ color: "var(--orange-500)", fontStyle: "italic" }}>{TEMA.titulo[1]}</em>
+      </h1>
+      <form onSubmit={enviar} className="relative rounded-2xl w-full max-w-sm p-7 pt-24 mt-24 cartinha"
         style={{ background: "var(--bg-card-elevated)", border: "1px solid var(--border-default)" }}>
         <Figura fig={TEMA.entrar} altura={140} className="absolute left-1/2 -translate-x-1/2 -top-16 pointer-events-none" />
-        <button type="button" onClick={onClose} className="absolute top-3 right-3 p-1.5 rounded-lg" aria-label="Fechar"
-          style={{ color: "var(--text-tertiary)" }}>
-          <X size={18} />
-        </button>
         <h2 className="font-fraunces text-2xl text-center mb-1" style={{ color: "var(--text-primary)" }}>{TEMA.textos.entrarTitulo}</h2>
-        <p className="font-dm text-sm text-center mb-5" style={{ color: "var(--text-secondary)" }}>{TEMA.textos.entrarSub}</p>
+        <p className="font-dm text-sm text-center mb-5" style={{ color: "var(--text-secondary)" }}>
+          As contas só aparecem depois de entrar.
+        </p>
         <label className="block font-dm text-xs font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>Nome</label>
         <input type="text" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} required
           value={email} onChange={(e) => setEmail(e.target.value)}
@@ -221,16 +241,11 @@ function ModalEntrar({ onClose, onEntrar }: {
         <input type="password" inputMode="numeric" autoComplete="current-password" required value={senha} onChange={(e) => setSenha(e.target.value)}
           className={`${campo} mb-4`} style={estiloCampo} />
         {erro && <p className="font-dm text-sm mb-3" style={{ color: "var(--neg)" }}>{erro}</p>}
-        <button type="submit" disabled={indo} className="w-full py-3 rounded-xl font-dm text-sm font-semibold transition-all disabled:opacity-60"
+        <button type="submit" disabled={indo} className="w-full py-3.5 rounded-xl font-dm text-base font-semibold transition-all disabled:opacity-60"
           style={{ background: "var(--orange-500)", color: "var(--sobre-acento)" }}>
           {indo ? "Entrando…" : "Entrar"}
         </button>
-        {TEMA.notaDaConta && (
-          <p className="font-dm text-[12px] text-center mt-4" style={{ color: "var(--text-tertiary)" }}>
-            {TEMA.notaDaConta}
-          </p>
-        )}
       </form>
-    </div>
+    </main>
   );
 }
