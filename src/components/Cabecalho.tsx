@@ -1,12 +1,12 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Cloud, CloudOff, Download, LogOut, RefreshCw, Upload } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Cloud, CloudOff, Download, LogOut, RefreshCw, Upload } from "lucide-react";
 import Figura from "@/components/Figura";
 import Losango from "@/components/Losango";
 import ModoTema from "@/components/ModoTema";
 import { Fofo } from "@/components/Fofos";
 import { useConta } from "@/components/Moldura";
-import { APP, TEMA, type Humor } from "@/lib/tema";
+import { APP, TEMA, asset, type Humor } from "@/lib/tema";
 import { MESES } from "@/lib/financas-data";
 
 /**
@@ -76,6 +76,12 @@ export default function Cabecalho({ mY, mM, onMes, humor, onBackup, onImportar }
           )}
         </div>
         <div className="flex gap-1.5">
+          {/* a rotina da semana mora junto do Inari (rotina/ no build) */}
+          {!snow && (
+            <a href={asset("rotina/")} className={botaoFaixa} style={estiloBotaoFaixa} title="A rotina da semana">
+              <CalendarDays size={13} /> <span className="hidden sm:inline">Rotina</span>
+            </a>
+          )}
           <ModoTema className={botaoFaixa} style={estiloBotaoFaixa} />
           <button onClick={onBackup} className={botaoFaixa} style={estiloBotaoFaixa} title="Baixar uma cópia de tudo">
             <Download size={13} /> <span className="hidden sm:inline">Backup</span>

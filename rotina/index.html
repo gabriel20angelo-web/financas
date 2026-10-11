@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#13211F">
+<title>Rotina da Raposa</title>
+<link rel="icon" href="../inari/icone-192.png">
+<link rel="apple-touch-icon" href="../inari/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..800,0..100,0..1;1,9..144,400..800,0..100,0..1&display=swap" rel="stylesheet">
+<script>
+  // o modo vem antes de pintar: a escolha guardada ou, sem escolha, o do aparelho
+  try {
+    var m = localStorage.getItem("modo-rotina");
+    var escuro = m ? m === "escuro" : matchMedia("(prefers-color-scheme: dark)").matches;
+    document.documentElement.dataset.tema = escuro ? "escuro" : "claro";
+  } catch (e) { document.documentElement.dataset.tema = "claro"; }
+</script>
+<style>
+/* A rotina com a identidade do Inari: a faixa é a noite da mata (estrelas,
+   fogo-de-raposa, morro), embaixo o papel washi. Calendário do mês à
+   esquerda, o dia escolhido à direita; no celular, um embaixo do outro. */
+:root {
+  --papel: url("../inari/papel/washi.webp");
+  --bg: #F2EBDC; --card: #F8F4EA; --card-2: #FCFAF4; --hover: #EBE2CD;
+  --tinta: #13211F; --tinta-2: #2C3A35; --tinta-3: #56655D;
+  --linha: rgba(19, 33, 31, .11); --linha-2: rgba(19, 33, 31, .2);
+  --mata: #1E3A2F; --ouro: #D7A441; --ouro-txt: #8C6510; --torii: #CF432F; --kitsunebi: #6DB5AE;
+  --sel-bg: #1E3A2F; --sel-fg: #F2EBDC;
+  --blind-bg: #1E3A2F; --blind-fg: #F2EBDC; --blind-ic: #D7A441;
+  --fim-de-semana: rgba(194, 91, 122, .07);
+  --c-aula: #2E4C7A; --c-estudo: #6B5A99; --c-corpo: #3F6B36; --c-casa: #A87414; --c-comida: #B85A26;
+  --c-respiro: #3E8C85; --c-iara: #C25B7A; --c-sono: #46598A; --c-base: #8A968F; --c-clin: #1E3A2F;
+  --sombra: 0 1px 0 rgba(19, 33, 31, .05), 0 10px 26px -18px rgba(19, 33, 31, .45);
+  --grao: 0;
+  --f-titulo: "Fraunces", Georgia, serif;
+  --f-ui: "Barlow", system-ui, sans-serif;
+  --f-num: "Barlow Semi Condensed", "Barlow", system-ui, sans-serif;
+  color-scheme: light;
+}
+[data-tema="escuro"] {
+  --papel: none;
+  --bg: #0E1715; --card: #16211E; --card-2: #1B2824; --hover: #22302B;
+  --tinta: #EEEAE0; --tinta-2: #CBC5B6; --tinta-3: #949E96;
+  --linha: rgba(238, 234, 224, .09); --linha-2: rgba(238, 234, 224, .18);
+  --ouro-txt: #E3B44F;
+  --sel-bg: #D7A441; --sel-fg: #13211F;
+  --blind-bg: #E6DCC4; --blind-fg: #13211F; --blind-ic: #962B24;
+  --fim-de-semana: rgba(238, 150, 176, .06);
+  --c-aula: #86ACE0; --c-estudo: #B1A3DE; --c-corpo: #8CC28A; --c-casa: #E3B44F; --c-comida: #EC9A5C;
+  --c-respiro: #6DB5AE; --c-iara: #EE96B0; --c-sono: #9FB0E6; --c-base: #8F9A93; --c-clin: #E6DCC4;
+  --sombra: 0 1px 0 rgba(0, 0, 0, .3), 0 12px 28px -18px rgba(0, 0, 0, .9);
+  --grao: .3;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%;
+  --grao-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1' numOctaves='1' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 0.93  0 0 0 0 0.84  2.6 0 0 0 -1.45'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E"); }
+body { margin: 0; min-height: 100vh; color: var(--tinta); background: var(--papel) var(--bg); font: 16px/1.45 var(--f-ui); -webkit-font-smoothing: antialiased; }
+[data-tema="escuro"] body { background: radial-gradient(90% 55% at 50% 0%, rgba(109, 181, 174, .06), transparent 70%) fixed, var(--bg); }
+body::after { content: ""; position: fixed; inset: 0; z-index: 50; pointer-events: none; opacity: var(--grao); background-image: var(--grao-img); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ouro); outline-offset: 2px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 16px; }
+
+/* ─── a faixa: noite da mata ─── */
+.faixa { position: relative; overflow: hidden; color: #EEEAE0;
+  background: radial-gradient(70% 120% at 62% 0%, rgba(109, 181, 174, .12), transparent 65%), #13211F;
+  padding-top: env(safe-area-inset-top, 0px); }
+[data-tema="escuro"] .faixa { background-color: #101B19; }
+.faixa::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .3; background-image: var(--grao-img); }
+.ceu::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image:
+  radial-gradient(1.4px 1.4px at 12% 22%, rgb(238 234 224 / .6) 50%, transparent 52%),
+  radial-gradient(1px 1px at 27% 64%, rgb(238 234 224 / .45) 50%, transparent 52%),
+  radial-gradient(1.6px 1.6px at 46% 16%, rgb(238 234 224 / .55) 50%, transparent 52%),
+  radial-gradient(1px 1px at 58% 72%, rgb(238 234 224 / .4) 50%, transparent 52%),
+  radial-gradient(1.3px 1.3px at 71% 30%, rgb(238 234 224 / .5) 50%, transparent 52%),
+  radial-gradient(1px 1px at 84% 58%, rgb(238 234 224 / .45) 50%, transparent 52%),
+  radial-gradient(1.5px 1.5px at 93% 18%, rgb(238 234 224 / .55) 50%, transparent 52%),
+  radial-gradient(1.2px 1.2px at 36% 38%, rgb(238 234 224 / .4) 50%, transparent 52%); }
+.kitsunebi { position: absolute; width: 10px; height: 14px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+  background: radial-gradient(circle at 50% 70%, #E6FFFB 0 18%, #6DB5AE 45%, rgb(109 181 174 / 0) 72%);
+  filter: blur(.3px) drop-shadow(0 0 6px rgb(109 181 174 / .9)); }
+@media (prefers-reduced-motion: no-preference) {
+  .kitsunebi { animation: respira 3.6s ease-in-out infinite; }
+  .fig-faixa { animation: chega .6s ease-out both; }
+}
+@keyframes respira { 0%, 100% { transform: translateY(0) scale(1); opacity: .85; } 50% { transform: translateY(-5px) scale(1.12); opacity: 1; } }
+@keyframes chega { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.morro { position: absolute; left: 0; right: 0; bottom: -1px; height: 22px; z-index: 2; background: var(--papel) var(--bg);
+  -webkit-mask: radial-gradient(28px 22px at 50% 100%, #000 98%, transparent 100%) 0 0 / 56px 22px repeat-x;
+          mask: radial-gradient(28px 22px at 50% 100%, #000 98%, transparent 100%) 0 0 / 56px 22px repeat-x; }
+[data-tema="escuro"] .morro { background: var(--bg); }
+.faixa .wrap { position: relative; z-index: 1; }
+.topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 18px; }
+.btn-faixa { display: inline-flex; align-items: center; gap: 6px; padding: 7px 11px; border-radius: 10px; font: 600 12.5px var(--f-ui);
+  background: rgb(255 255 255 / .08); border: 1px solid rgb(255 255 255 / .16); color: inherit; text-decoration: none; cursor: pointer; }
+.btn-faixa:hover { background: rgb(255 255 255 / .14); }
+.cena { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding-bottom: 34px; }
+.cena-txt { min-width: 0; padding-top: 14px; }
+.marca { font: 600 12px var(--f-num); text-transform: uppercase; letter-spacing: .22em; color: var(--ouro); margin: 0; }
+h1 { font: 500 clamp(46px, 11vw, 76px)/.95 var(--f-titulo); font-variation-settings: "SOFT" 100, "WONK" 1; color: #F2EBDC; margin: 6px 0 0; letter-spacing: -.01em; }
+h1 em { color: var(--ouro); font-style: italic; }
+.agora { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 18px; max-width: 640px; }
+.agora > div { background: rgb(255 255 255 / .06); border: 1px solid rgb(255 255 255 / .12); border-radius: 14px; padding: 10px 12px; min-width: 0; }
+.agora .lbl { font: 600 10.5px var(--f-num); text-transform: uppercase; letter-spacing: .16em; color: rgb(238 234 224 / .62); }
+.agora .val { font: 600 18px/1.2 var(--f-titulo); font-variation-settings: "SOFT" 100; margin-top: 3px; color: #F2EBDC; overflow-wrap: anywhere; }
+.agora .val small { display: block; font: 500 12.5px var(--f-ui); color: rgb(238 234 224 / .66); margin-top: 2px; }
+.agora .val em { color: var(--ouro); font-style: normal; }
+.fig-faixa { height: 176px; max-width: 34vw; object-fit: contain; object-position: bottom; flex: none; filter: drop-shadow(0 6px 10px rgb(0 0 0 / .35)); margin-bottom: -6px; }
+
+/* ─── o corpo ─── */
+main.wrap { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 22px; align-items: start; padding-block: 18px 10px; }
+.cartao { background: var(--papel) var(--card); border: 1px solid var(--linha); border-radius: 18px; box-shadow: var(--sombra); min-width: 0; }
+[data-tema="escuro"] .cartao { background: var(--card); }
+
+.cal { padding: 16px 14px 14px; }
+.cal-topo { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 4px 12px; }
+.cal-topo h2 { font: italic 500 28px/1 var(--f-titulo); font-variation-settings: "SOFT" 100, "WONK" 1; margin: 0; }
+.cal-topo h2 span { font-style: normal; color: var(--tinta-3); font-size: 18px; }
+.setas { display: flex; gap: 6px; }
+.seta { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--linha-2); background: transparent; cursor: pointer; display: grid; place-items: center; }
+.seta:hover { background: var(--hover); }
+.hojebtn { font: 600 12px var(--f-num); letter-spacing: .08em; text-transform: uppercase; padding: 0 12px; height: 34px; border-radius: 999px; border: 1px solid var(--linha-2); background: transparent; cursor: pointer; }
+.hojebtn:hover { background: var(--hover); }
+.grade { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.sem-nome { font: 600 11px var(--f-num); text-transform: uppercase; letter-spacing: .14em; color: var(--tinta-3); text-align: center; padding: 2px 0 4px; }
+.sem-legenda { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin: 8px 2px 1px; font: 600 11.5px var(--f-num); letter-spacing: .06em; color: var(--tinta-3); }
+.sem-legenda::after { content: ""; flex: 1; height: 1px; background: var(--linha); }
+.sem-legenda .tipo { text-transform: uppercase; letter-spacing: .14em; }
+.sem-legenda.pesada .tipo { color: var(--ouro-txt); }
+.sem-legenda .lua { display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
+.dia { position: relative; min-height: 78px; border-radius: 11px; border: 1px solid var(--linha); background: var(--card-2); padding: 6px 6px 6px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 4px; min-width: 0; transition: background .15s, border-color .15s; }
+[data-tema="escuro"] .dia { background: var(--card-2); }
+.dia:hover { border-color: var(--linha-2); background: var(--hover); }
+.dia.fds { background: linear-gradient(var(--fim-de-semana), var(--fim-de-semana)), var(--card-2); }
+.dia.fora { opacity: .38; }
+.dia .n { font: 600 17px/1 var(--f-titulo); font-variation-settings: "SOFT" 100; font-variant-numeric: lining-nums tabular-nums; }
+.dia.hoje { border-color: var(--torii); box-shadow: inset 0 0 0 1px var(--torii); }
+.dia.hoje .n { color: var(--torii); }
+.dia.sel { background: var(--sel-bg); border-color: var(--sel-bg); color: var(--sel-fg); }
+.dia.sel .n { color: var(--sel-fg); }
+.dia.sel .mk { color: var(--sel-fg); }
+.dia.sel .mk i { background: var(--sel-fg); }
+.mks { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mk { display: flex; align-items: center; gap: 4px; font: 600 10.5px/1.15 var(--f-num); color: var(--tinta-2); min-width: 0; }
+.mk i { width: 6px; height: 6px; border-radius: 50%; background: var(--dot); flex: none; }
+.mk span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-pe { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 14px; margin-top: 12px; padding: 0 4px; font-size: 13px; color: var(--tinta-3); }
+.troca { font: 600 12.5px var(--f-ui); background: none; border: 0; padding: 4px 0; color: var(--ouro-txt); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+
+/* o dia escolhido */
+.agenda { position: relative; padding: 18px 14px 12px; margin-top: 40px; }
+.espia { position: absolute; top: -57px; right: 22px; height: 64px; pointer-events: none; }
+.ag-topo { padding: 0 6px 10px; }
+.ag-topo .eyebrow { font: 600 11px var(--f-num); text-transform: uppercase; letter-spacing: .18em; color: var(--tinta-3); }
+.ag-topo h2 { font: 500 26px/1.1 var(--f-titulo); font-variation-settings: "SOFT" 100, "WONK" 1; margin: 4px 0 8px; text-wrap: balance; }
+.ag-topo h2 em { font-style: italic; color: var(--tinta-3); font-weight: 400; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { font: 600 11.5px var(--f-num); letter-spacing: .06em; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--linha-2); color: var(--tinta-2); }
+.pill.pesada { border-color: var(--ouro); color: var(--ouro-txt); }
+ol.linha { list-style: none; margin: 0; padding: 0; position: relative; }
+ol.linha::before { content: ""; position: absolute; left: 63px; top: 10px; bottom: 10px; width: 1.5px; background: var(--linha-2); }
+.it { position: relative; display: grid; grid-template-columns: 50px 26px minmax(0, 1fr) auto; align-items: start; padding: 7px 8px 7px 6px; border-radius: 11px; }
+.it .t { font: 600 14px/1.25 var(--f-num); font-variant-numeric: tabular-nums; color: var(--tinta-2); text-align: right; padding-top: 1px; }
+.it .t small { display: block; font-weight: 500; font-size: 12px; color: var(--tinta-3); }
+.it .pt { justify-self: center; width: 11px; height: 11px; border-radius: 50%; margin-top: 4px; background: var(--dot); box-shadow: 0 0 0 3px var(--card); position: relative; z-index: 1; }
+.it .d { min-width: 0; }
+.it .d b { font-weight: 600; }
+.it .d em { display: block; font-style: normal; font-size: 13.5px; color: var(--tinta-3); }
+.it .cad { margin-top: 2px; color: var(--blind-ic); }
+.it.agora-it { background: var(--hover); }
+.it.agora-it .d b::after { content: "agora"; margin-left: 8px; font: 700 10px var(--f-num); letter-spacing: .14em; text-transform: uppercase; color: var(--torii); vertical-align: 2px; }
+.it.blind { background: var(--blind-bg); color: var(--blind-fg); }
+.it.blind .t, .it.blind .t small, .it.blind em { color: inherit; opacity: .8; }
+.it.blind .pt { background: var(--blind-ic); box-shadow: 0 0 0 3px var(--blind-bg); }
+.c-aula { --dot: var(--c-aula); } .c-estudo { --dot: var(--c-estudo); } .c-corpo { --dot: var(--c-corpo); }
+.c-casa { --dot: var(--c-casa); } .c-comida { --dot: var(--c-comida); } .c-respiro { --dot: var(--c-respiro); }
+.c-iara { --dot: var(--c-iara); } .c-sono { --dot: var(--c-sono); } .c-base { --dot: var(--c-base); } .c-clin { --dot: var(--c-clin); }
+.legenda { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 12px 8px 4px; margin-top: 8px; border-top: 1px solid var(--linha); font-size: 13px; color: var(--tinta-3); }
+.legenda span { display: inline-flex; align-items: center; gap: 6px; }
+.legenda i { width: 8px; height: 8px; border-radius: 50%; background: var(--dot); }
+.legenda .bl { color: var(--tinta-2); font-weight: 600; }
+.legenda .bl svg { color: var(--blind-ic); }
+[data-tema="escuro"] .legenda .bl svg { color: var(--ouro); }
+
+/* o mês */
+.mes { padding-block: 26px 10px; }
+.mes h2 { font: italic 500 30px/1 var(--f-titulo); font-variation-settings: "SOFT" 100, "WONK" 1; margin: 0 0 14px; }
+.fatos { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+.fato { position: relative; padding: 16px 16px 16px 92px; min-height: 104px; }
+.fato img { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 68px; height: 76px; object-fit: contain; }
+.fato b { display: block; font: 500 19px/1.2 var(--f-titulo); font-variation-settings: "SOFT" 100; margin-bottom: 4px; }
+.fato p { margin: 0; font-size: 14.5px; color: var(--tinta-2); }
+.sono { display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 6px; margin-top: 8px; }
+.sono div { border: 1px solid var(--linha); border-radius: 10px; padding: 5px 6px; text-align: center; font: 500 11px/1.25 var(--f-num); color: var(--tinta-3); }
+.sono div b { display: block; font: 600 17px var(--f-num); color: var(--c-sono); font-variant-numeric: tabular-nums; }
+.sono div.cur { border-color: var(--c-sono); background: var(--hover); }
+
+footer.wrap { display: flex; align-items: center; justify-content: center; gap: 12px; padding-block: 26px 40px; color: var(--tinta-3); font-size: 14px; }
+footer img { height: 58px; }
+footer a { color: var(--tinta-2); font-weight: 600; }
+
+@media (max-width: 900px) {
+  main.wrap { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .agora { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .agora > div:first-child { grid-column: 1 / -1; }
+  .fig-faixa { height: 120px; max-width: 30vw; }
+  .cena { padding-bottom: 30px; }
+  .cal { padding: 14px 8px 12px; }
+  .grade { gap: 3px; }
+  .dia { min-height: 54px; padding: 5px 4px; border-radius: 9px; }
+  .dia .n { font-size: 15px; }
+  .mks { flex-direction: row; flex-wrap: wrap; gap: 3px; }
+  .mk span { display: none; }
+  .mk i { width: 7px; height: 7px; }
+  .cal-topo h2 { font-size: 24px; }
+}
+</style>
+</head>
+<body>
+
+<header class="faixa ceu">
+  <span class="kitsunebi" style="left:56%;top:30%"></span>
+  <span class="kitsunebi" style="left:65%;top:60%;animation-delay:-1.2s;transform:scale(.8)"></span>
+  <span class="kitsunebi" style="left:47%;top:74%;animation-delay:-2.4s"></span>
+  <div class="wrap">
+    <div class="topo">
+      <a class="btn-faixa" href="../">
+        <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Inari
+      </a>
+      <button class="btn-faixa" id="modo" type="button"></button>
+    </div>
+    <div class="cena">
+      <div class="cena-txt">
+        <p class="marca">os dias da raposa</p>
+        <h1>Roti<em>na</em></h1>
+        <div class="agora" aria-live="polite">
+          <div><div class="lbl">Agora</div><div class="val" id="v-agora">…</div></div>
+          <div><div class="lbl">Depois</div><div class="val" id="v-depois">…</div></div>
+          <div><div class="lbl">Hoje deita</div><div class="val" id="v-deita">…</div></div>
+        </div>
+      </div>
+      <img class="fig-faixa" id="fig-faixa" src="../inari/fig/raposa-trotando.webp" alt="">
+    </div>
+  </div>
+  <div class="morro"></div>
+</header>
+
+<main class="wrap">
+  <section class="cartao cal" aria-label="Calendário do mês">
+    <div class="cal-topo">
+      <h2 id="mes-nome">Outubro <span>2026</span></h2>
+      <div class="setas">
+        <button class="hojebtn" id="ir-hoje" type="button">hoje</button>
+        <button class="seta" id="mes-ant" type="button" aria-label="Mês anterior"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="seta" id="mes-prox" type="button" aria-label="Próximo mês"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+    </div>
+    <div class="grade" id="grade"></div>
+    <div class="cal-pe">
+      <span>Semana pesada: supervisão na segunda e grupo na quinta.</span>
+      <button class="troca" id="troca" type="button">A semana pesada está errada? Trocar</button>
+    </div>
+  </section>
+
+  <section class="cartao agenda" aria-label="O dia escolhido">
+    <img class="espia" src="../inari/fig/kitsune-espiando.webp" alt="">
+    <div class="ag-topo">
+      <div class="eyebrow" id="ag-eyebrow">hoje</div>
+      <h2 id="ag-titulo">…</h2>
+      <div class="pills" id="ag-pills"></div>
+    </div>
+    <ol class="linha" id="ag-lista"></ol>
+    <div class="legenda">
+      <span class="bl"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M5 7V5a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>blindado, sem celular</span>
+      <span>o resto dá pra falar com a Iara</span>
+      <span class="c-aula"><i></i>aula</span>
+      <span class="c-estudo"><i></i>estudo</span>
+      <span class="c-corpo"><i></i>academia</span>
+      <span class="c-casa"><i></i>casa</span>
+      <span class="c-comida"><i></i>comida</span>
+      <span class="c-respiro"><i></i>respiro</span>
+      <span class="c-iara"><i></i>Iara</span>
+      <span class="c-sono"><i></i>sono</span>
+    </div>
+  </section>
+</main>
+
+<section class="wrap mes" aria-label="O mês">
+  <h2>O mês</h2>
+  <div class="fatos">
+    <div class="cartao fato">
+      <img src="../inari/fig/raposa-dormindo.webp" alt="Raposa dormindo enrolada na própria cauda">
+      <b>O sono desce aos poucos</b>
+      <p>Meia hora a menos por semana, até deitar às 23h.</p>
+      <div class="sono" id="sono"></div>
+    </div>
+    <div class="cartao fato">
+      <img src="../inari/fig/raposa-tigela.webp" alt="Raposa dentro de uma tigela">
+      <b>10 potes de marmita</b>
+      <p>São 9 refeições por semana (5 almoços e 4 jantares) e sobra 1 pote. Cozinha na terça à noite: de quarta a sexta os potes ficam na geladeira, e os de segunda e terça vão pro congelador.</p>
+    </div>
+    <div class="cartao fato">
+      <img src="../inari/fig/raposa-noren.webp" alt="Raposa espiando por baixo da cortina de loja">
+      <b>Mercado</b>
+      <p>O da semana é na terça, na volta do grupo, já com o que vai cozinhar à noite. O do mês é no 1º sábado, das 9h às 11h, com a Iara.</p>
+    </div>
+    <div class="cartao fato">
+      <img src="../inari/obj/torii.webp" alt="Portal torii vermelho">
+      <b>Reunião geral da Allos</b>
+      <p>No último sábado do mês, das 10h às 12h. Blindada.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="wrap">
+  <img src="../inari/fig/raposa-trotando.webp" alt="Raposa trotando">
+  <span>A rotina mora junto do <a href="../">Inari</a>.</span>
+</footer>
+
+<script>
+(function () {
+  // ─── os dias ───
+  // cada item: [começo, fim, o quê, categoria, nota]; categoria "clin" = blindado
+  var MANHA = [
+    ["06:00", "", "Acordar", "sono"],
+    ["06:05", "", "Banho", "base"],
+    ["06:25", "", "Café", "comida"],
+    ["06:45", "", "Sai de moto", "base", "chega lá por volta de 7h40"],
+    ["07:40", "12:50", "Aula", "aula"]
+  ];
+  var NOITE_SEG = [
+    ["18:00", "", "Banho", "base"],
+    ["18:30", "", "Jantar, louça e casa", "comida", "15 min de arrumação"],
+    ["19:00", "20:00", "Atendimento", "clin", "quando tiver; senão, livre"],
+    ["20:00", "22:00", "Projeto Jung", "estudo", "vault e Raposa"],
+    ["22:00", "", "Desacelerar", "sono", "sem tela"]
+  ];
+  var NOITE_QUI = [
+    ["18:00", "", "Banho", "base"],
+    ["18:30", "", "Jantar, louça e casa", "comida", "15 min de arrumação"],
+    ["19:00", "", "Atendimento", "clin"],
+    ["20:30", "", "Atendimento", "clin"],
+    ["21:30", "", "Desacelerar", "sono", "sem tela"]
+  ];
+  var MARMITA = ["12:50", "", "Marmita na faculdade", "comida"];
+  var TERAPIA_DESDE = new Date(2026, 9, 14);
+
+  function itens(d) {
+    var w = d.getDay(), pes = pesada(d), l;
+    if (w === 1) l = pes
+      ? MANHA.concat([["12:50", "", "Almoço na faculdade", "comida"], ["13:00", "15:30", "Supervisão", "clin"], ["16:00", "", "Chega · respiro", "respiro", "Iara/cochilo"], ["16:30", "18:00", "Academia", "corpo"]], NOITE_SEG)
+      : MANHA.concat([["13:40", "", "Chega · respiro", "respiro", "Iara/cochilo"], ["14:00", "", "Almoço", "comida", "marmita esquentada"], ["14:30", "16:00", "Faculdade", "estudo", "estudo e trabalhos"], ["16:00", "", "Respiro", "respiro", "Iara/cochilo"], ["16:30", "18:00", "Academia", "corpo"]], NOITE_SEG);
+    else if (w === 2) l = MANHA.concat([MARMITA, ["13:00", "15:30", "Grupo", "clin"], ["15:30", "", "Mercado da semana", "casa", "o que vai cozinhar à noite"], ["16:30", "", "Chega · respiro", "respiro", "Iara/cochilo"], ["16:45", "18:15", "Academia", "corpo"], ["18:15", "", "Banho", "base"], ["18:40", "", "Jantar", "comida"], ["19:00", "21:00", "Cozinhar a semana", "casa", "a roupa bate na máquina ao mesmo tempo"], ["21:00", "", "Estender a roupa e lavar a louça", "casa"], ["22:00", "", "Desacelerar", "sono", "sem tela"]]);
+    else if (w === 3) {
+      l = MANHA.concat([MARMITA, ["13:00", "15:30", "Grupo", "clin"], ["16:00", "", "Chega · respiro longo", "respiro", "Iara/cochilo; sem academia hoje"], ["17:00", "", "Banho", "base"], ["17:20", "", "Jantar cedo e louça", "comida"]]);
+      if (d >= TERAPIA_DESDE) l.push(["18:00", "19:00", "Terapia", "clin"]);
+      l = l.concat([["19:30", "", "Atendimento", "clin"], ["20:30", "", "Atendimento", "clin"], ["21:30", "", "Lanche e desacelerar", "sono", "sem tela"]]);
+    }
+    else if (w === 4) l = pes
+      ? MANHA.concat([MARMITA, ["13:00", "", "Respiro", "respiro", "Iara/cochilo"], ["14:00", "15:30", "Grupo", "clin", "quinzenal"], ["15:30", "", "Carona da Iara", "iara"], ["16:15", "", "Chega", "respiro"], ["16:30", "18:00", "Estudar os casos", "estudo", "no lugar da academia"]], NOITE_QUI)
+      : MANHA.concat([["13:40", "", "Chega e almoça", "comida", "marmita esquentada"], ["14:30", "16:00", "Estudar os casos", "estudo", "antes de atender"], ["16:00", "16:30", "Faxina do quarto", "casa"], ["16:30", "18:00", "Academia", "corpo"]], NOITE_QUI);
+    else if (w === 5) l = MANHA.concat([["13:40", "", "Chega e almoça", "comida", "marmita esquentada"], ["14:00", "16:00", "Buscar a Iara", "iara", "em algum momento entre 14h e 16h"], ["16:00", "", "Tarde e noite com a Iara", "iara"]]);
+    else if (w === 6) {
+      l = [];
+      if (primeiroSabado(d)) l.push(["09:00", "11:00", "Mercado do mês", "casa", "com a Iara"]);
+      if (ultimoSabado(d)) l.push(["10:00", "12:00", "Reunião geral da Allos", "clin"]);
+      l.push(["", "", "Dia com a Iara", "iara"]);
+    }
+    else l = [["", "", "Dia com a Iara", "iara"], ["22:00", "", "Desacelerar", "sono", "amanhã tem aula"]];
+    if (w >= 0 && w <= 4) l = l.concat([[deita(d), "", "Dormir", "sono", "acorda às 6h"]]);
+    return l;
+  }
+
+  // o que aparece no quadradinho do calendário
+  function marcas(d) {
+    var w = d.getDay(), pes = pesada(d), m = [];
+    if (w === 1 && pes) m.push(["supervisão", "clin"]);
+    if (w === 2) m.push(["cozinhar", "casa"]);
+    if (w === 3 && d >= TERAPIA_DESDE) m.push(["terapia", "clin"]);
+    if (w === 4) m.push(pes ? ["grupo", "clin"] : ["faxina", "casa"]);
+    if (w === 6 && primeiroSabado(d)) m.push(["mercado", "casa"]);
+    if (w === 6 && ultimoSabado(d)) m.push(["Allos", "clin"]);
+    if (w === 5 || w === 6 || w === 0) m.push(["Iara", "iara"]);
+    return m;
+  }
+
+  // ─── semanas, sono e datas ───
+  // referência: o grupo de quinta rodou em 08/10, então 05/10 foi pesada e 19/10 também
+  var REF_PESADA = new Date(2026, 9, 19);
+  var troca = 0;
+  try { troca = localStorage.getItem("rotina-troca") === "1" ? 1 : 0; } catch (e) {}
+  function segunda(d) { var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return x; }
+  function pesada(d) {
+    var semanas = Math.round((segunda(d) - REF_PESADA) / 6048e5);
+    return ((semanas % 2 + 2) % 2 === 0) !== (troca === 1);
+  }
+  function deita(d) {
+    var t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    if (t < new Date(2026, 9, 19)) return "00:30";
+    if (t < new Date(2026, 9, 26)) return "00:00";
+    if (t < new Date(2026, 10, 2)) return "23:30";
+    return "23:00";
+  }
+  function primeiroSabado(d) { return d.getDay() === 6 && d.getDate() <= 7; }
+  function ultimoSabado(d) { return d.getDay() === 6 && d.getDate() + 7 > new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(); }
+  function mesmoDia(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+  function fmt(h) { if (!h) return ""; var p = h.split(":"); return (+p[0]) + "h" + (p[1] === "00" ? "" : p[1]); }
+  function min(h) { var p = h.split(":"); var m = +p[0] * 60 + +p[1]; if (+p[0] < 5) m += 1440; return m; }
+  var MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+  var DIAS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+  var CURTO = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"];
+  var FIG = { aula: "raposa-anotando", estudo: "raposa-anotando", corpo: "raposa-trotando", clin: "raposa-lanterna", comida: "raposa-tigela", casa: "raposa-noren", iara: "raposa-olhando-lua", respiro: "raposa-dormindo", sono: "raposa-dormindo-lua", base: "raposa-trotando" };
+  var CADEADO = '<svg class="cad" width="14" height="14" viewBox="0 0 16 16" aria-label="blindado"><rect x="3" y="7" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M5 7V5a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  // ─── estado ───
+  var hoje = new Date();
+  var sel = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  var mesY = sel.getFullYear(), mesM = sel.getMonth();
+  var $ = function (id) { return document.getElementById(id); };
+
+  function minutosAgora() { var n = new Date(); var m = n.getHours() * 60 + n.getMinutes(); if (n.getHours() < 5) m += 1440; return m; }
+  // depois da meia-noite e antes das 5h, o "dia" ainda é o de ontem
+  function diaDeAgora() { var n = new Date(); if (n.getHours() < 5) n.setDate(n.getDate() - 1); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+  function atual(lista) {
+    var agora = minutosAgora(), cur = -1, prox = -1;
+    lista.forEach(function (x, i) { if (!x[0]) return; if (min(x[0]) <= agora) cur = i; else if (prox < 0) prox = i; });
+    return { cur: cur, prox: prox };
+  }
+
+  function renderCal() {
+    $("mes-nome").innerHTML = MESES[mesM].charAt(0).toUpperCase() + MESES[mesM].slice(1) + " <span>" + mesY + "</span>";
+    var g = $("grade"); g.innerHTML = "";
+    CURTO.forEach(function (n) { var e = document.createElement("div"); e.className = "sem-nome"; e.textContent = n; g.appendChild(e); });
+    var ini = segunda(new Date(mesY, mesM, 1));
+    var fim = new Date(mesY, mesM + 1, 0);
+    var hj = diaDeAgora();
+    for (var s = new Date(ini); s <= fim; s.setDate(s.getDate() + 7)) {
+      var pes = pesada(s);
+      var leg = document.createElement("div");
+      leg.className = "sem-legenda" + (pes ? " pesada" : "");
+      leg.innerHTML = '<span class="tipo">semana ' + (pes ? "pesada" : "leve") + '</span><span class="lua">· deita ' + fmt(deita(s)) + "</span>";
+      g.appendChild(leg);
+      for (var i = 0; i < 7; i++) {
+        var d = new Date(s.getFullYear(), s.getMonth(), s.getDate() + i);
+        var b = document.createElement("button");
+        b.type = "button";
+        var w = d.getDay();
+        b.className = "dia" + (d.getMonth() !== mesM ? " fora" : "") + (w === 5 || w === 6 || w === 0 ? " fds" : "") + (mesmoDia(d, hj) ? " hoje" : "") + (mesmoDia(d, sel) ? " sel" : "");
+        b.setAttribute("aria-label", DIAS[w] + ", " + d.getDate() + " de " + MESES[d.getMonth()]);
+        b.setAttribute("aria-pressed", mesmoDia(d, sel) ? "true" : "false");
+        var mk = marcas(d).map(function (m) { return '<span class="mk c-' + m[1] + '"><i></i><span>' + m[0] + "</span></span>"; }).join("");
+        b.innerHTML = '<span class="n">' + d.getDate() + '</span><span class="mks">' + mk + "</span>";
+        (function (dd) { b.addEventListener("click", function () { sel = dd; if (dd.getMonth() !== mesM) { mesM = dd.getMonth(); mesY = dd.getFullYear(); } renderCal(); renderDia(); }); })(d);
+        g.appendChild(b);
+      }
+    }
+  }
+
+  function renderDia() {
+    var hj = diaDeAgora(), ehHoje = mesmoDia(sel, hj);
+    var diff = Math.round((sel - hj) / 864e5);
+    $("ag-eyebrow").textContent = ehHoje ? "hoje" : diff === 1 ? "amanhã" : diff === -1 ? "ontem" : "o dia escolhido";
+    $("ag-titulo").innerHTML = DIAS[sel.getDay()] + " <em>" + sel.getDate() + " de " + MESES[sel.getMonth()] + "</em>";
+    var w = sel.getDay(), pills = [];
+    if (w >= 1 && w <= 5) pills.push('<span class="pill' + (pesada(sel) ? " pesada" : "") + '">semana ' + (pesada(sel) ? "pesada" : "leve") + "</span>");
+    if (w >= 0 && w <= 4) pills.push('<span class="pill">deita ' + fmt(deita(sel)) + "</span>");
+    if (w === 5 || w === 6 || w === 0) pills.push('<span class="pill">tempo da Iara</span>');
+    $("ag-pills").innerHTML = pills.join("");
+    var lista = itens(sel), a = ehHoje ? atual(lista) : { cur: -1 };
+    $("ag-lista").innerHTML = lista.map(function (x, i) {
+      var blind = x[3] === "clin";
+      return '<li class="it c-' + x[3] + (blind ? " blind" : "") + (i === a.cur ? " agora-it" : "") + '">' +
+        '<span class="t">' + (x[0] ? fmt(x[0]) : "o dia") + (x[1] ? "<small>até " + fmt(x[1]) + "</small>" : "") + "</span>" +
+        '<span class="pt"></span>' +
+        '<span class="d"><b>' + esc(x[2]) + "</b>" + (x[4] ? "<em>" + esc(x[4]) + "</em>" : "") + "</span>" +
+        (blind ? CADEADO : "<span></span>") + "</li>";
+    }).join("");
+  }
+
+  function renderAgora() {
+    var d = diaDeAgora(), w = d.getDay(), lista = itens(d), a = atual(lista), agora = minutosAgora();
+    var cur = a.cur >= 0 ? lista[a.cur] : null, prox = a.prox >= 0 ? lista[a.prox] : null;
+    var A = $("v-agora"), D = $("v-depois"), B = $("v-deita"), cat = "sono";
+    if (w === 6 || w === 0 && agora < 1320 || w === 5 && agora >= 960) {
+      if (cur && cur[1] && min(cur[1]) > agora && cur[3] !== "iara") { A.innerHTML = esc(cur[2]) + "<small>até " + fmt(cur[1]) + "</small>"; cat = cur[3]; }
+      else { A.innerHTML = "Tempo com a Iara"; cat = "iara"; }
+    } else if (!cur) {
+      A.innerHTML = "Dormindo<small>acorda às 6h</small>"; cat = "sono";
+    } else {
+      A.innerHTML = esc(cur[2]) + (cur[1] && min(cur[1]) > agora ? "<small>até " + fmt(cur[1]) + "</small>" : cur[4] ? "<small>" + esc(cur[4]) + "</small>" : "");
+      cat = cur[3];
+    }
+    D.innerHTML = prox ? esc(prox[2]) + "<small>às " + fmt(prox[0]) + "</small>" : "Amanhã<small>começa às 6h</small>";
+    B.innerHTML = w >= 0 && w <= 4 ? "<em>" + fmt(deita(d)) + "</em><small>acorda às 6h</small>" : "Livre<small>amanhã não tem aula</small>";
+    var f = $("fig-faixa"), src = "../inari/fig/" + (FIG[cat] || "raposa-trotando") + ".webp";
+    if (f.getAttribute("src") !== src) f.setAttribute("src", src);
+  }
+
+  function renderSono() {
+    var fases = [["00:30", "12 a 18/10", new Date(2026, 9, 12), new Date(2026, 9, 19)], ["00:00", "19 a 25/10", new Date(2026, 9, 19), new Date(2026, 9, 26)], ["23:30", "26/10 a 1/11", new Date(2026, 9, 26), new Date(2026, 10, 2)], ["23:00", "de 2/11 em diante", new Date(2026, 10, 2), new Date(2100, 0, 1)]];
+    var h = diaDeAgora();
+    $("sono").innerHTML = fases.map(function (f, i) {
+      var cur = (h >= f[2] && h < f[3]) || (i === 0 && h < f[2]);
+      return '<div' + (cur ? ' class="cur"' : "") + "><b>" + fmt(f[0]) + "</b>" + f[1] + "</div>";
+    }).join("");
+  }
+
+  // ─── modo claro/escuro ───
+  var LUA = '<svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5Z" fill="currentColor"/></svg>';
+  var SOL = '<svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3" fill="currentColor"/><g stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 1.5v1.6M8 12.9v1.6M1.5 8h1.6M12.9 8h1.6M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M3.4 12.6l1.1-1.1M11.5 4.5l1.1-1.1"/></g></svg>';
+  function pintaModo() {
+    var escuro = document.documentElement.dataset.tema === "escuro";
+    $("modo").innerHTML = (escuro ? SOL + " claro" : LUA + " escuro");
+    $("modo").setAttribute("aria-label", escuro ? "Mudar para o modo claro" : "Mudar para o modo escuro");
+  }
+  $("modo").addEventListener("click", function () {
+    var novo = document.documentElement.dataset.tema === "escuro" ? "claro" : "escuro";
+    document.documentElement.dataset.tema = novo;
+    try { localStorage.setItem("modo-rotina", novo); } catch (e) {}
+    pintaModo();
+  });
+
+  $("mes-ant").addEventListener("click", function () { mesM--; if (mesM < 0) { mesM = 11; mesY--; } renderCal(); });
+  $("mes-prox").addEventListener("click", function () { mesM++; if (mesM > 11) { mesM = 0; mesY++; } renderCal(); });
+  $("ir-hoje").addEventListener("click", function () { sel = diaDeAgora(); mesY = sel.getFullYear(); mesM = sel.getMonth(); renderCal(); renderDia(); });
+  $("troca").addEventListener("click", function () {
+    troca = troca ? 0 : 1;
+    try { localStorage.setItem("rotina-troca", String(troca)); } catch (e) {}
+    renderCal(); renderDia(); renderAgora();
+  });
+
+  sel = diaDeAgora(); mesY = sel.getFullYear(); mesM = sel.getMonth();
+  pintaModo(); renderCal(); renderDia(); renderAgora(); renderSono();
+  setInterval(function () { renderAgora(); if (mesmoDia(sel, diaDeAgora())) renderDia(); }, 60000);
+})();
+</script>
+</body>
+</html>

@@ -3,6 +3,7 @@
 //   site/snowbobao/    → /financas/snowbobao/
 //   site/index.html    → /financas/ (a porta para os dois)
 //   site/livro-caixa/  → leva para o Snowbobão (o endereço antigo)
+//   site/inari/rotina/ → a rotina da semana (pasta rotina/, HTML solto)
 import { execSync } from 'node:child_process';
 import { cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 
@@ -20,6 +21,9 @@ for (const app of APPS) {
   // a pasta public/ entra inteira em cada build: tira as figuras do outro app
   for (const outro of APPS.filter((a) => a !== app)) rmSync(`site/${app}/${outro}`, { recursive: true, force: true });
 }
+
+// a rotina da semana mora junto do Inari (página solta, sem login): /financas/inari/rotina/
+cpSync('rotina', 'site/inari/rotina', { recursive: true });
 
 writeFileSync('site/.nojekyll', '');
 writeFileSync('site/index.html', `<!doctype html>
