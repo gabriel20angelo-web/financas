@@ -235,7 +235,10 @@ footer a { color: var(--tinta-2); font-weight: 600; }
         <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Inari
       </a>
-      <button class="btn-faixa" id="modo" type="button"></button>
+      <div style="display:flex;gap:6px">
+        <a class="btn-faixa" href="../marmitas/">Marmitas e mercado</a>
+        <button class="btn-faixa" id="modo" type="button"></button>
+      </div>
     </div>
     <div class="cena">
       <div class="cena-txt">
@@ -305,12 +308,12 @@ footer a { color: var(--tinta-2); font-weight: 600; }
     <div class="cartao fato">
       <img src="../inari/fig/raposa-tigela.webp" alt="Raposa dentro de uma tigela">
       <b>10 potes de marmita</b>
-      <p>São 9 refeições por semana (5 almoços e 4 jantares) e sobra 1 pote. Cozinha na terça à noite: de quarta a sexta os potes ficam na geladeira, e os de segunda e terça vão pro congelador.</p>
+      <p>São 9 refeições por semana (5 almoços e 4 jantares) e sobra 1 pote. Cozinha na terça à noite: de quarta a sexta os potes ficam na geladeira, e os de segunda e terça vão pro congelador. <a href="../marmitas/" style="color:var(--ouro-txt);font-weight:600">As receitas e a lista do mercado</a></p>
     </div>
     <div class="cartao fato">
       <img src="../inari/fig/raposa-noren.webp" alt="Raposa espiando por baixo da cortina de loja">
       <b>Mercado</b>
-      <p>O da semana é na terça, na volta do grupo, já com o que vai cozinhar à noite. O do mês é no 1º sábado, das 9h às 11h, com a Iara.</p>
+      <p>O da semana é na terça, na volta do grupo, já com o que vai cozinhar à noite. O do mês é no 1º sábado, das 9h às 11h, com a Iara. <a href="../marmitas/" style="color:var(--ouro-txt);font-weight:600">Abrir a lista</a></p>
     </div>
     <div class="cartao fato">
       <img src="../inari/obj/torii.webp" alt="Portal torii vermelho">
@@ -358,7 +361,7 @@ footer a { color: var(--tinta-2); font-weight: 600; }
     if (w === 1) l = pes
       ? MANHA.concat([["12:50", "", "Almoço na faculdade", "comida"], ["13:00", "15:30", "Supervisão", "clin"], ["16:00", "", "Chega · respiro", "respiro", "Iara/cochilo"], ["16:30", "18:00", "Academia", "corpo"]], NOITE_SEG)
       : MANHA.concat([["13:40", "", "Chega · respiro", "respiro", "Iara/cochilo"], ["14:00", "", "Almoço", "comida", "marmita esquentada"], ["14:30", "16:00", "Faculdade", "estudo", "estudo e trabalhos"], ["16:00", "", "Respiro", "respiro", "Iara/cochilo"], ["16:30", "18:00", "Academia", "corpo"]], NOITE_SEG);
-    else if (w === 2) l = MANHA.concat([MARMITA, ["13:00", "15:30", "Grupo", "clin"], ["15:30", "", "Mercado da semana", "casa", "o que vai cozinhar à noite"], ["16:30", "", "Chega · respiro", "respiro", "Iara/cochilo"], ["16:45", "18:15", "Academia", "corpo"], ["18:15", "", "Banho", "base"], ["18:40", "", "Jantar", "comida"], ["19:00", "21:00", "Cozinhar a semana", "casa", "a roupa bate na máquina ao mesmo tempo"], ["21:00", "", "Estender a roupa e lavar a louça", "casa"], ["22:00", "", "Desacelerar", "sono", "sem tela"]]);
+    else if (w === 2) l = MANHA.concat([MARMITA, ["13:00", "15:30", "Grupo", "clin"], ["15:30", "", "Mercado da semana", "casa", "a lista está em Marmitas e mercado"], ["16:30", "", "Chega · respiro", "respiro", "Iara/cochilo"], ["16:45", "18:15", "Academia", "corpo"], ["18:15", "", "Banho", "base"], ["18:40", "", "Jantar", "comida"], ["19:00", "21:00", "Cozinhar a semana", "casa", "a roupa bate na máquina ao mesmo tempo"], ["21:00", "", "Estender a roupa e lavar a louça", "casa"], ["22:00", "", "Desacelerar", "sono", "sem tela"]]);
     else if (w === 3) {
       l = MANHA.concat([MARMITA, ["13:00", "15:30", "Grupo", "clin"], ["16:00", "", "Chega · respiro longo", "respiro", "Iara/cochilo; sem academia hoje"], ["17:00", "", "Banho", "base"], ["17:20", "", "Jantar cedo e louça", "comida"]]);
       if (d >= TERAPIA_DESDE) l.push(["18:00", "19:00", "Terapia", "clin"]);
